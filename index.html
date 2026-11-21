@@ -275,7 +275,7 @@ function vMX(){
   h+=planView(m);
  if(fid.length){const cnt=k=>fid.filter(id=>lvl(id)===k).length,av=avail(m),avgL=av.length?av.reduce((a,p)=>a+lvl(p.id),0)/av.length:2,fa=fid.reduce((a,id)=>a+lvl(id),0)/fid.length,d=fa-avgL;
   h+=`<p class="mut" style="margin:0 0 8px">Op het veld: ${cnt(3)} sterk · ${cnt(2)} gemiddeld · ${cnt(1)} beginner · <b style="color:${Math.abs(d)<.35?'var(--ok)':'var(--late)'}">${Math.abs(d)<.35?'in balans':d>0?'zwaar (veel sterk)':'licht (veel beginners)'}</b></p>`}
- if(c.phase==='live')h+=`<p class="mut" style="margin:0 0 8px">Wisselen doen we in de rust. Alleen bij een blessure: tik op de speler op het veld.</p>`;
+ if(c.phase==='live')h+=c.half>=m.per-1?`<div class="card row"><span class="grow mut">Tussentijds wisselen mag nu: tik op een speler op de bank. Daarna <b>Herbereken rest</b>, dan past het plan zich aan op de echte minuten.</span><button data-a="replan">Herbereken rest</button></div>`:`<p class="mut" style="margin:0 0 8px">Wisselen tussen de ${PN(m)}en. Alleen bij een blessure: tik op de speler op het veld.</p>`;
 
  h+=`<div class="pitch"><div class="mid"></div><div class="cir"></div>`+slots(m).map(([s,x,y])=>{const p=m.field[s];
   return `<button class="slot ${s==='K'?'K':''} ${p?'':'empty'}" style="left:${x}%;top:${y}%" data-a="slot" data-s="${s}"><span class="dot">${s}</span><span class="nm">${p?esc(short(p)):'leeg'}</span>${p&&(trk||fin)?`<span class="mn" data-min="${p}">${mins(pmin(m,p,t))}</span>`:''}</button>`}).join('')+'</div>';
@@ -318,7 +318,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:35</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:40</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -349,7 +349,7 @@ const isK=p=>(p.pos||'').toUpperCase().split(/[ ,\/]+/).includes('K');
 function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(m),z=Z();if(!av.length)return;
  const old=m.plan||{},plan={};for(let h=1;h<from;h++)plan[h]=(old[h]||[]).filter(id=>av.some(p=>p.id===id));
  const left=P-from+1,S=left*n;
- const done=id=>{let k=0;for(let h=1;h<from;h++)if(plan[h].includes(id))k++;return k};
+ const tNow=ct(m),L=m.perMin*60,restQ=m.clock.phase==='live'?Math.max(0,L-(tNow-m.clock.ps)):0,fNow=onField(m),done=id=>from>1?(pmin(m,id,tNow)+(fNow.includes(id)?restQ:0))/L:0;
  const minP=Math.ceil(P/2);
  const sf=av.reduce((a,p)=>a+factor(p.id),0),ideal={},need={},lo={};
  for(const p of av){ideal[p.id]=Math.min(P,Math.max(minP,P*n*factor(p.id)/sf))-done(p.id);lo[p.id]=Math.min(left,Math.max(0,minP-done(p.id)));
@@ -388,7 +388,7 @@ function planView(m){const c=m.clock,P=m.per;if(c.phase==='end')return '';
    return `<td><button style="min-height:36px;padding:2px 10px" ${lock?'disabled':''} data-a="tgl" data-h="${i+1}" data-p="${p.id}" class="${on?'pri':''}">${on?'speelt':'bank'}</button></td>`}).join('');
    return `<tr><td>${esc(short(p.id))} <small>${LV[lvl(p.id)]}${m.att[p.id]==='l'?' · laat':''}</small></td>${cells}<td>${fm(k*len)}'</td></tr>`}).join('')+
   `</table></div><small>${Array.from({length:P},(_,i)=>{const n=(m.plan[i+1]||[]).length,ns=slots(m).length;return `${PN(m).replace(/^./,x=>x.toUpperCase())} ${i+1}: ${n}/${ns}${n!==ns?' ⚠':''}`}).join(' · ')}. Tik op een vakje om te wijzigen.</small></div>`;
- h=`<p class="mut" style="margin:0 0 6px">Per ${PN(m)} (${fm(len)} min) staan er ${slots(m).length} spelers op het veld. Iedereen speelt minimaal de helft van de wedstrijd, wie het best traint speelt meer. Wissels alleen tussen de ${PN(m)}en.</p>`+h;
+ h=`<p class="mut" style="margin:0 0 6px">Per ${PN(m)} (${fm(len)} min) staan er ${slots(m).length} spelers op het veld. Iedereen speelt minimaal de helft van de wedstrijd, wie het best traint speelt meer. Het plan bepaalt wie wanneer speelt; de posities verdeel je zelf: tik op een speler op het veld en kies <b>Wissel van plek met</b>.</p>`+h;
  if(nextH){const ids=m.plan[nextH]||[],f=onField(m),uit=f.filter(p=>!ids.includes(p)),in_=ids.filter(p=>!f.includes(p));
   if(uit.length||in_.length||!f.length)h+=`<div class="card tip"><b>${nextH===1?'Startopstelling':'Wissels voor '+PN(m)+' '+nextH}</b><br><small>${in_.length?'Erin: '+in_.map(p=>esc(short(p))).join(', '):''}${uit.length?' · Eruit: '+uit.map(p=>esc(short(p))).join(', '):''}</small><div class="row" style="margin-top:8px"><button class="acc grow" data-a="applyP" data-h="${nextH}">${nextH===1?'Zet op het veld':'Voer wissels uit'}</button>${c.phase==='rust'?'<button data-a="replan">Herbereken rest</button>':''}</div></div>`}
  return h}
@@ -427,8 +427,8 @@ function shSlot(s){const m=cm(),t=ct(m),pid=m.field[s],trk=tracking(m)||m.clock.
  const b=bench(m).map(p=>({p,mn:pmin(m,p.id,t)})).sort((x,y)=>x.mn-y.mn);
  let h=`<h2>${s}${pid?': '+esc(pn(pid)):' (leeg)'}</h2>`;
  if(pid&&tracking(m))h+=`<div class="row"><button class="acc grow" data-a="goalBy" data-p="${pid}">Doelpunt ${esc(short(pid))}</button></div>`;
- h+=`<h3>Erin${pid?' voor '+esc(short(pid)):''}</h3><div class="list">`+(b.map(x=>`<button data-a="put" data-s="${s}" data-p="${x.p.id}"><span>${esc(x.p.name)}${x.p.pos?' <small>'+esc(x.p.pos)+'</small>':''}</span><span class="mut">${trk?mins(x.mn):''}</span></button>`).join('')||'<p class="mut">Geen wisselspelers.</p>')+'</div>';
  if(pid)h+=`<h3>Wissel van plek met</h3><div class="list">`+slots(m).filter(([c])=>c!==s).map(([c])=>`<button data-a="swap" data-s="${s}" data-s2="${c}"><span>${c}</span><span class="mut">${m.field[c]?esc(pn(m.field[c])):'leeg'}</span></button>`).join('')+`</div><button data-a="out" data-s="${s}" style="width:100%">${esc(short(pid))} naar de bank</button>`;
+ h+=`<h3>Erin${pid?' voor '+esc(short(pid)):''}</h3><div class="list">`+(b.map(x=>`<button data-a="put" data-s="${s}" data-p="${x.p.id}"><span>${esc(x.p.name)}${x.p.pos?' <small>'+esc(x.p.pos)+'</small>':''}</span><span class="mut">${trk?mins(x.mn):''}</span></button>`).join('')||'<p class="mut">Geen wisselspelers.</p>')+'</div>';
  sheet(h)}
 function shBench(pid){const m=cm(),t=ct(m),trk=tracking(m);
  const fs=slots(m).map(([s])=>({s,p:m.field[s],mn:m.field[s]?pmin(m,m.field[s],t):-1})).sort((x,y)=>y.mn-x.mn);
