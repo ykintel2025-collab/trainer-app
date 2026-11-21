@@ -110,7 +110,7 @@ const mmss=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%
 const mins=s=>Math.floor((s||0)/60)+"'";
 const minute=t=>t==null?'':(Math.floor(t/60)+1)+"'";
 
-let S={team:{name:'JO10-5',players:[],size:6,form:'2-1-2',per:2,perMin:25,u:0},matches:{},trainings:{}};
+let S={team:{name:'JO10-5',players:[],size:6,form:'2-1-2',per:4,perMin:12.5,u:0},matches:{},trainings:{}};
 try{const j=localStorage.getItem(LS);if(j){const o=JSON.parse(j);if(o&&o.team)S=o}}catch(e){}
 const U={v:'m',mid:null,mtab:'veld',tid:null};
 
@@ -166,9 +166,13 @@ const closeSt=(m,p,t)=>{for(const s of m.stints)if(s.p===p&&s.b==null)s.b=t};
 const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).map(k=>`<option value="${n}|${k}" ${+n===+size&&k===form?'selected':''}>${n} tegen ${n} · ${k}</option>`).join('')).join('');
 const save=()=>touch('matches/'+U.mid);
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk'};
+const PN=m=>m.per===4?'kwart':m.per===2?'helft':'periode';const PA=m=>m.per===4?'K':m.per===2?'H':'P';const fm=x=>String(x).replace('.',',');
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
 const ZD={on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
-function migrate(){if(!S.team.inzet||S.team.inzet.v!==2){S.team.inzet=Object.assign({},S.team.inzet||{},{from:'2026-11-16',weight:33,arrive:'17:50',v:2});S.team.u=Date.now();setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}}
+function migrate(){if(S.team.fmt!==3){S.team.fmt=3;S.team.per=4;S.team.perMin=12.5;S.team.u=Date.now();const n=Date.now();
+ for(const m of Object.values(S.matches))if(m.clock&&m.clock.phase==='pre'){m.per=4;m.perMin=12.5;delete m.plan;m.u=n;setTimeout(()=>dirty.add('matches/'+m.id),0)}
+ setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}
+if(!S.team.inzet||S.team.inzet.v!==2){S.team.inzet=Object.assign({},S.team.inzet||{},{from:'2026-11-16',weight:33,arrive:'17:50',v:2});S.team.u=Date.now();setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}}
 migrate();
 const Z=()=>Object.assign({},ZD,S.team.inzet||{});
 function ensureTrainings(){const z=Z();if(!z.days||!z.days.length)return;const end=new Date();end.setDate(end.getDate()+7);
@@ -253,8 +257,8 @@ function vMX(){
  let btns='';
  const nS=slots(m).length,nF=onField(m).length,nAv=avail(m).length,need=Math.min(nS,nAv),ready=nAv>0&&nF>=need;
  if(c.phase==='pre')btns=ready?`<button class="acc grow" data-a="kick">Aftrap</button>`:`<button class="grow" disabled>Aftrap (eerst stap 1 en 2)</button>`;
- else if(c.phase==='live')btns=`<button class="grow" data-a="pause">${c.runAt?'Pauze':'Hervat'}</button><button class="pri grow" data-a="endp">${c.half>=m.per?'Einde wedstrijd':'Einde periode '+c.half}</button>`;
- else if(c.phase==='rust')btns=`<button class="acc grow" data-a="nextp">Start periode ${c.half+1}</button><button class="grow" data-a="endm">Einde wedstrijd</button>`;
+ else if(c.phase==='live')btns=`<button class="grow" data-a="pause">${c.runAt?'Pauze':'Hervat'}</button><button class="pri grow" data-a="endp">${c.half>=m.per?'Einde wedstrijd':'Einde '+PN(m)+' '+c.half}</button>`;
+ else if(c.phase==='rust')btns=`<button class="acc grow" data-a="nextp">Start ${PN(m)} ${c.half+1}</button><button class="grow" data-a="endm">Einde wedstrijd</button>`;
  else btns=`<span class="grow mut">Afgelopen (${mins(c.acc)} gespeeld)</span><button data-a="reopen">Heropen</button>`;
  if(c.phase!=='pre')btns+=`<button class="dng" data-a="resetM">Reset</button>`;
  const last=m.events.filter(e=>e.type!=='wissel').slice(-1)[0];
@@ -263,7 +267,7 @@ function vMX(){
   <div class="prow"><span class="grow">${st1?'✓':'1.'} Aanwezigheid invullen <small>(${filled}/${ps.length})</small></span>${st1?'':`<button class="acc" data-a="mtab" data-t="aanw">Invullen</button>`}</div>
   <div class="prow"><span class="grow">${st2?'✓':'2.'} Wisselplan + opstelling <small>${m.plan?'(klaar, aan te passen hieronder)':''}</small></span>${st2?'':`<button class="${st1?'acc':''}" data-a="mkplan" ${nAv?'':'disabled'}>Maak plan</button>`}</div>
   <div class="prow"><span class="grow">${ready&&st2?'3. Klaar: tik op Aftrap':'3. Aftrap'}</span></div></div>`}
- h+=`<div class="card"><div class="ctl"><div><div class="clock" data-clock>${mmss(t-c.ps)}</div><small>${c.phase==='pre'?'Nog niet begonnen':fin?'Afgelopen':'Periode '+c.half+' van '+m.per+' · totaal '+mins(t)}${c.phase==='live'&&!c.runAt?' · gepauzeerd':''}</small></div>
+ h+=`<div class="card"><div class="ctl"><div><div class="clock" data-clock>${mmss(t-c.ps)}</div><small>${c.phase==='pre'?'Nog niet begonnen':fin?'Afgelopen':PN(m).replace(/^./,x=>x.toUpperCase())+' '+c.half+' van '+m.per+' · totaal '+mins(t)}${c.phase==='live'&&!c.runAt?' · gepauzeerd':''}</small></div>
  <div><div class="score">${f} - ${a}</div><small>wij - ${esc(m.opp||'zij')}</small></div></div>
  <div class="row" style="margin-top:10px">${btns}</div>
  <div class="row" style="margin-top:8px"><button class="grow" data-a="goal">+ Goal wij</button><button class="grow" data-a="tegen">+ Goal tegen</button>${last?`<button data-a="undo" class="dng">Ongedaan</button>`:''}</div></div>`;
@@ -314,7 +318,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:30</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:35</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -347,11 +351,13 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
  const left=P-from+1,S=left*n;
  const done=id=>{let k=0;for(let h=1;h<from;h++)if(plan[h].includes(id))k++;return k};
  const minP=Math.ceil(P/2);
- const need={};for(const p of av)need[p.id]=Math.min(left,Math.max(0,minP-done(p.id)));
+ const sf=av.reduce((a,p)=>a+factor(p.id),0),ideal={},need={},lo={};
+ for(const p of av){ideal[p.id]=Math.min(P,Math.max(minP,P*n*factor(p.id)/sf))-done(p.id);lo[p.id]=Math.min(left,Math.max(0,minP-done(p.id)));
+  need[p.id]=Math.min(left,Math.max(lo[p.id],Math.floor(ideal[p.id]+1e-9)))}
  let used=av.reduce((a,p)=>a+need[p.id],0);
- if(used<S){const pr=p=>factor(p.id)*10-done(p.id)*0.5-starts(p.id)*.05+Math.random()*.01;
-  const order=av.slice().sort((a,b)=>pr(b)-pr(a));
-  for(let r=0;used<S&&r<left;r++)for(const p of order){if(used>=S)break;if(need[p.id]<left){need[p.id]++;used++}}}
+ const fr=p=>ideal[p.id]-need[p.id]-starts(p.id)*.01+Math.random()*.001;
+ while(used<S){const c=av.filter(p=>need[p.id]<left).sort((a,b)=>fr(b)-fr(a))[0];if(!c)break;need[c.id]++;used++}
+ while(used>S){const c=av.filter(p=>need[p.id]>lo[p.id]).sort((a,b)=>fr(a)-fr(b))[0];if(!c)break;need[c.id]--;used--}
  const avgL=av.reduce((a,p)=>a+lvl(p.id),0)/av.length,rem=Object.assign({},need);
  for(let h=from;h<=P;h++){const pl=h-from;const restP=P-h+1;
   let pool=av.filter(p=>rem[p.id]>0);const pick=pool.filter(p=>rem[p.id]>=restP);
@@ -377,13 +383,14 @@ function planView(m){const c=m.clock,P=m.per;if(c.phase==='end')return '';
  let h='';
  if(!m.plan){return c.phase!=='pre'&&avail(m).length?`<div class="card tip row"><span class="grow">Nog geen wisselplan.</span><button class="acc" data-a="mkplan">Maak wisselplan</button></div>`:''}
  const av=avail(m),len=m.perMin;
- h+=`<div class="card"><div class="row"><b class="grow">Wisselplan</b><button data-a="mkplan">Opnieuw</button></div><div class="scroll"><table><tr><th>Speler</th>${Array.from({length:P},(_,i)=>`<th>${P===2?'H':'P'}${i+1}</th>`).join('')}<th>Min</th></tr>`+
+ h+=`<div class="card"><div class="row"><b class="grow">Wisselplan</b><button data-a="mkplan">Opnieuw</button></div><div class="scroll"><table><tr><th>Speler</th>${Array.from({length:P},(_,i)=>`<th>${PA(m)}${i+1}</th>`).join('')}<th>Min</th></tr>`+
   av.map(p=>{let k=0;const cells=Array.from({length:P},(_,i)=>{const on=(m.plan[i+1]||[]).includes(p.id);if(on)k++;const lock=c.phase!=='pre'&&i+1<=c.half;
    return `<td><button style="min-height:36px;padding:2px 10px" ${lock?'disabled':''} data-a="tgl" data-h="${i+1}" data-p="${p.id}" class="${on?'pri':''}">${on?'speelt':'bank'}</button></td>`}).join('');
-   return `<tr><td>${esc(short(p.id))} <small>${LV[lvl(p.id)]}${m.att[p.id]==='l'?' · laat':''}</small></td>${cells}<td>${k*len}'</td></tr>`}).join('')+
-  `</table></div><small>${Array.from({length:P},(_,i)=>{const n=(m.plan[i+1]||[]).length,ns=slots(m).length;return `${P===2?'Helft':'Periode'} ${i+1}: ${n}/${ns}${n!==ns?' ⚠':''}`}).join(' · ')}. Tik op een vakje om te wijzigen.</small></div>`;
+   return `<tr><td>${esc(short(p.id))} <small>${LV[lvl(p.id)]}${m.att[p.id]==='l'?' · laat':''}</small></td>${cells}<td>${fm(k*len)}'</td></tr>`}).join('')+
+  `</table></div><small>${Array.from({length:P},(_,i)=>{const n=(m.plan[i+1]||[]).length,ns=slots(m).length;return `${PN(m).replace(/^./,x=>x.toUpperCase())} ${i+1}: ${n}/${ns}${n!==ns?' ⚠':''}`}).join(' · ')}. Tik op een vakje om te wijzigen.</small></div>`;
+ h=`<p class="mut" style="margin:0 0 6px">Per ${PN(m)} (${fm(len)} min) staan er ${slots(m).length} spelers op het veld. Iedereen speelt minimaal de helft van de wedstrijd, wie het best traint speelt meer. Wissels alleen tussen de ${PN(m)}en.</p>`+h;
  if(nextH){const ids=m.plan[nextH]||[],f=onField(m),uit=f.filter(p=>!ids.includes(p)),in_=ids.filter(p=>!f.includes(p));
-  if(uit.length||in_.length||!f.length)h+=`<div class="card tip"><b>${nextH===1?'Startopstelling':'Wissels voor '+(P===2?'helft ':'periode ')+nextH}</b><br><small>${in_.length?'Erin: '+in_.map(p=>esc(short(p))).join(', '):''}${uit.length?' · Eruit: '+uit.map(p=>esc(short(p))).join(', '):''}</small><div class="row" style="margin-top:8px"><button class="acc grow" data-a="applyP" data-h="${nextH}">${nextH===1?'Zet op het veld':'Voer wissels uit'}</button>${c.phase==='rust'?'<button data-a="replan">Herbereken rest</button>':''}</div></div>`}
+  if(uit.length||in_.length||!f.length)h+=`<div class="card tip"><b>${nextH===1?'Startopstelling':'Wissels voor '+PN(m)+' '+nextH}</b><br><small>${in_.length?'Erin: '+in_.map(p=>esc(short(p))).join(', '):''}${uit.length?' · Eruit: '+uit.map(p=>esc(short(p))).join(', '):''}</small><div class="row" style="margin-top:8px"><button class="acc grow" data-a="applyP" data-h="${nextH}">${nextH===1?'Zet op het veld':'Voer wissels uit'}</button>${c.phase==='rust'?'<button data-a="replan">Herbereken rest</button>':''}</div></div>`}
  return h}
 
 /* ---------- sheets ---------- */
@@ -405,7 +412,7 @@ function shPlayer(p){const n=!p;p=p||{name:'',nr:'',pos:''};
 function shSettings(){const t=S.team;
  sheet(`<h2>Instellingen</h2><form data-f="s"><label>Teamnaam</label><input name="name" value="${esc(t.name)}" required>
  <label>Standaard spelvorm</label><select name="sf">${formOpts(t.size,t.form)}</select>
- <div class="g2"><div><label>Aantal periodes</label><select name="per">${[2,4].map(x=>`<option ${t.per==x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>Minuten per periode</label><input name="perMin" inputmode="numeric" value="${t.perMin}"></div></div>
+ <div class="g2"><div><label>Aantal delen (2 = helften, 4 = kwarten)</label><select name="per">${[2,4].map(x=>`<option ${t.per==x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>Minuten per deel</label><input name="perMin" inputmode="decimal" value="${t.perMin}"></div></div>
  <p class="mut">Geldt voor nieuwe wedstrijden. Bestaande wedstrijden pas je aan via Bewerken.</p>
  <h3>Inzet telt mee in speeltijd</h3>
  <label><input type="checkbox" name="zon" ${Z().on?'checked':''} style="width:auto;min-height:0;margin-right:8px">Trainingsopkomst laat speeltijd meewegen</label>
@@ -505,7 +512,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Obj
   close();U.v='mx';U.mid=m.id;touch('matches/'+m.id)}
  else if(f.dataset.f==='p'){let p=id&&S.team.players.find(x=>x.id===id);if(!p){p={id:uid()};S.team.players.push(p)}
   Object.assign(p,{name:d.name.trim(),nr:d.nr.trim(),pos:d.pos.trim(),lvl:+d.lvl||2});close();touch('team/main')}
- else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+d.perMin||25,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-16',weight:+d.zw||33,win:+d.zwin,v:2,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:50'}});close();touch('team/main')}});
+ else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+String(d.perMin).replace(',','.')||12.5,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-16',weight:+d.zw||33,win:+d.zwin,v:2,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:50'}});close();touch('team/main')}});
 document.addEventListener('change',e=>{const k=e.target.dataset.ch;if(!k)return;const v=e.target.value;
  if(k==='mform')setForm(v);
  else if(k==='mnote'){cm().note=v;touch('matches/'+U.mid,true)}
