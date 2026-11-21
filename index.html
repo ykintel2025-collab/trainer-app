@@ -442,6 +442,13 @@ setInterval(()=>{if(U.v!=='mx'||U.mtab!=='veld')return;const m=cm();if(!m||!m.cl
  const c=document.querySelector('[data-clock]');if(c)c.textContent=mmss(t-m.clock.ps);
  document.querySelectorAll('[data-min]').forEach(el=>{el.textContent=mins(pmin(m,el.dataset.min,t))})},1000);
 
+/* import via link (#import=...) */
+try{const h=location.hash;if(h.indexOf('#import=')===0){
+ const o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(h.slice(8))))));const n=Date.now();
+ if(o&&o.team){if(!P().length){S.team=Object.assign(o.team,{u:n});dirty.add('team/main')}
+  for(const c of ['matches','trainings'])for(const id in (o[c]||{}))if(!S[c][id]){S[c][id]=Object.assign(o[c][id],{u:n});dirty.add(c+'/'+id)}
+  persist()}
+ history.replaceState(null,'',location.pathname+location.search)}}catch(e){}
 render();connect();
 }
 </script></body></html>
