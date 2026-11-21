@@ -275,7 +275,7 @@ function vMX(){
   h+=planView(m);
  if(fid.length){const cnt=k=>fid.filter(id=>lvl(id)===k).length,av=avail(m),avgL=av.length?av.reduce((a,p)=>a+lvl(p.id),0)/av.length:2,fa=fid.reduce((a,id)=>a+lvl(id),0)/fid.length,d=fa-avgL;
   h+=`<p class="mut" style="margin:0 0 8px">Op het veld: ${cnt(3)} sterk · ${cnt(2)} gemiddeld · ${cnt(1)} beginner · <b style="color:${Math.abs(d)<.35?'var(--ok)':'var(--late)'}">${Math.abs(d)<.35?'in balans':d>0?'zwaar (veel sterk)':'licht (veel beginners)'}</b></p>`}
- if(c.phase==='live')h+=c.half>=m.per-1?`<div class="card row"><span class="grow mut">Tussentijds wisselen mag nu: tik op een speler op de bank. Daarna <b>Herbereken rest</b>, dan past het plan zich aan op de echte minuten.</span><button data-a="replan">Herbereken rest</button></div>`:`<p class="mut" style="margin:0 0 8px">Wisselen tussen de ${PN(m)}en. Alleen bij een blessure: tik op de speler op het veld.</p>`;
+ if(c.phase==='live')h+=`<div class="card row"><span class="grow mut">Wisselen doe je bij voorkeur tussen de ${PN(m)}en. Tussendoor kan ook: tik op een speler op de bank en daarna op <b>Herbereken rest</b>.</span><button data-a="replan">Herbereken rest</button></div>`;
 
  h+=`<div class="pitch"><div class="mid"></div><div class="cir"></div>`+slots(m).map(([s,x,y])=>{const p=m.field[s];
   return `<button class="slot ${s==='K'?'K':''} ${p?'':'empty'}" style="left:${x}%;top:${y}%" data-a="slot" data-s="${s}"><span class="dot">${s}</span><span class="nm">${p?esc(short(p)):'leeg'}</span>${p&&(trk||fin)?`<span class="mn" data-min="${p}">${mins(pmin(m,p,t))}</span>`:''}</button>`}).join('')+'</div>';
@@ -318,7 +318,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:40</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:45</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
