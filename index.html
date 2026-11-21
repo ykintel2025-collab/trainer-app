@@ -369,6 +369,8 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
  const L=m.perMin*60,tNow=ct(m),restQ=m.clock.phase==='live'?Math.max(0,L-(tNow-m.clock.ps)):0,fNow=onField(m);
  const lastQ=m.clock.phase==='pre'?0:m.clock.half,avIds=av.map(p=>p.id);
  for(let q=lastQ+1;q<from;q++){if(lu[q])for(const k in lu[q])if(!avIds.includes(lu[q][k]))delete lu[q][k];if(hsAll[q])hsAll[q]=hsAll[q].filter(x=>x.every(i=>avIds.includes(i)))}
+ for(let q=lastQ+1;q<from;q++){const Lq=lu[q]=lu[q]||{},sl=slots(m).map(x=>x[0]),fr2=av.filter(p=>!Object.values(Lq).includes(p.id)&&!(hsAll[q]||[]).some(x=>x[1]===p.id)).sort((a,b)=>factor(b.id)-factor(a.id)||lvl(b.id)-lvl(a.id));
+  for(const s of sl)if(!Lq[s]&&Object.keys(Lq).length<nn&&fr2.length)Lq[s]=fr2.shift().id}
  m.lu=lu;m.hs=hsAll;
  const done=id=>{let b=0;if(lastQ>0)b+=(pmin(m,id,tNow)+(fNow.includes(id)?restQ:0))/(L/2);for(let q=lastQ+1;q<from;q++){const e=planEntry(m,q,id);b+=e==='F'||e==='K'?2:e?1:0}return Math.round(b)};
  let maxB=B-1;if(av.length*maxB<TB)maxB=B;const minB=Math.min(maxB,Math.ceil(B/2));
