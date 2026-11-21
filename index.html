@@ -318,7 +318,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 9</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 10</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -384,7 +384,7 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
   plan[h]=pick.map(p=>p.id).concat(qPairs[h].map(([a,b])=>a.id+'|'+b.id));pick.forEach(p=>rem[p.id]--)}
  const kc={};for(let h=1;h<from;h++)if(plan.K[h])kc[plan.K[h]]=(kc[plan.K[h]]||0)+1;
  for(const h of Q){const full=plan[h].filter(x=>!x.includes('|'));if(!full.length)continue;
-  const sc=id=>{const p=S.team.players.find(x=>x.id===id)||{};return (isK(p)?-100:0)+(kc[id]||0)*10+(plan.K[h-1]===id?3:0)+seasonK(id)/600};
+  const sc=id=>{const p=S.team.players.find(x=>x.id===id)||{};return (plan.K[h-1]===id?-200:0)+(isK(p)?-100:0)+(kc[id]||0)*10+seasonK(id)/600};
   const k=full.slice().sort((a,b)=>sc(a)-sc(b))[0];plan.K[h]=k;kc[k]=(kc[k]||0)+1}
  m.plan=plan}
 function applyPeriod(m,h){const ent=(m.plan&&m.plan[h])||[],ids=ent.map(x=>x.split('|')[0]),K=m.plan.K&&m.plan.K[h];
@@ -404,7 +404,7 @@ function planView(m){const c=m.clock,P=m.per;if(c.phase==='end')return '';
  const nextH=c.phase==='pre'?1:c.phase==='rust'?c.half+1:0;
  if(!m.plan){return c.phase!=='pre'&&avail(m).length?`<div class="card tip row"><span class="grow">Nog geen wisselplan.</span><button class="acc" data-a="mkplan">Maak wisselplan</button></div>`:''}
  const av=avail(m),L=m.perMin,lab={F:'speelt',K:'keeper','1':'1e helft','2':'2e helft','':'bank'};
- let h=`<p class="mut" style="margin:0 0 6px">Per ${PN(m)} (${fm(L)} min) staan er ${slots(m).length} spelers op het veld. Niemand speelt de hele wedstrijd, iedereen zit een keer op de bank en speelt minimaal de helft. Wie het best traint speelt meer. "1e/2e helft" = halverwege het ${PN(m)} wisselen (na ${fm(L/2)} min). Posities verdeel je zelf, de keeper staat in het plan.</p>`;
+ let h=`<p class="mut" style="margin:0 0 6px">Per ${PN(m)} (${fm(L)} min) staan er ${slots(m).length} spelers op het veld. Niemand speelt de hele wedstrijd, iedereen zit een keer op de bank en speelt minimaal de helft. Wie het best traint speelt meer. "1e/2e helft" = halverwege het ${PN(m)} wisselen (na ${fm(L/2)} min). Posities verdeel je zelf. De keeper blijft keeper zolang hij in het veld staat; gaat hij naar de bank, dan neemt een ander het over.</p>`;
  h+=`<div class="card"><div class="row"><b class="grow">Wisselplan</b><button data-a="mkplan">Opnieuw</button></div><div class="scroll"><table><tr><th>Speler</th>${Array.from({length:P},(_,i)=>`<th>${PA(m)}${i+1}</th>`).join('')}<th>Min</th></tr>`+
   av.map(p=>{const cells=Array.from({length:P},(_,i)=>{const e=planEntry(m,i+1,p.id),lock=c.phase!=='pre'&&i+1<=c.half;
    return `<td><button style="min-height:36px;padding:2px 8px;font-size:14px" ${lock?'disabled':''} data-a="tgl" data-h="${i+1}" data-p="${p.id}" class="${e==='K'?'acc':e?'pri':''}">${lab[e]}</button></td>`}).join('');
