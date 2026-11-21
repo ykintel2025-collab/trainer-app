@@ -318,7 +318,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:45</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 7</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
