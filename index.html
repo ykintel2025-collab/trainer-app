@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Trainer JO10</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#1f3a93"><link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -511,5 +512,6 @@ try{const h=location.hash;if(h.indexOf('#import=')===0){
   persist()}
  history.replaceState(null,'',location.pathname+location.search)}}catch(e){}
 render();connect();
+try{if('serviceWorker' in navigator&&location.protocol==='https:'&&location.hostname.endsWith('github.io'))navigator.serviceWorker.register('sw.js')}catch(e){}
 }
 </script></body></html>
