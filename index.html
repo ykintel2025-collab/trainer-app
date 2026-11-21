@@ -166,7 +166,9 @@ const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).ma
 const save=()=>touch('matches/'+U.mid);
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk'};
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
-const Z=()=>Object.assign({on:true,from:'2026-11-23',weight:20,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:45'},S.team.inzet||{});
+const ZD={on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
+if(!S.team.inzet||S.team.inzet.v!==2){S.team.inzet=Object.assign({},S.team.inzet||{},{from:'2026-11-16',weight:33,arrive:'17:50',v:2});S.team.u=Date.now();setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}
+const Z=()=>Object.assign({},ZD,S.team.inzet||{});
 function ensureTrainings(){const z=Z();if(!z.days||!z.days.length)return;const end=new Date();end.setDate(end.getDate()+7);
  const d=new Date(z.from+'T12:00');let made=false;
  for(let i=0;i<400&&d<=end;i++,d.setDate(d.getDate()+1)){if(!z.days.includes(d.getDay()))continue;
@@ -294,7 +296,7 @@ function vT(){
   <div class="g2"><div><label>Datum</label><input type="date" value="${esc(t.date)}" data-ch="tdate"></div><div><label>Tijd</label><input type="time" value="${esc(t.time||'')}" data-ch="ttime"></div></div>
   <h3>Aanwezigheid</h3>${attList('t',t)}<label>Notities</label><textarea data-ch="tnote">${esc(t.note||'')}</textarea>
   <div class="row" style="margin-top:14px"><button class="dng" data-a="del" data-k="trainings" data-id="${t.id}">Training verwijderen</button></div>`}
- ensureTrainings();const ts=Ts(),n=P().length,z=Z();
+ ensureTrainings();const ts=Ts().slice().reverse(),n=P().length,z=Z();
  return `<div class="row"><h2 class="grow">Trainingen</h2><button class="pri" data-a="newT">+ Extra training</button></div><p class="mut" style="margin-top:-4px">${z.days.map(d=>DAYS[d]).join(' en ')} ${esc(z.time)}, aanwezig om ${esc(z.arrive)}. Later dan ${esc(z.arrive)} = te laat.</p>`+
   (ts.map(t=>{const a=Object.values(t.att).filter(v=>v==='a'||v==='l').length,l=Object.values(t.att).filter(v=>v==='l').length;
    return `<button class="mrow" data-a="openT" data-id="${t.id}"><span class="t">${esc(t.time||'')}</span><span class="grow"><b>${fdate(t.date)}</b><br><small>${a} van ${n} aanwezig${l?' · '+l+' te laat':''}</small></span></button>`}).join('')||'<p class="empty">Nog geen trainingen. Tik op + Training om aanwezigheid bij te houden.</p>')}
@@ -352,7 +354,7 @@ function shSettings(){const t=S.team;
  <p class="mut">Geldt voor nieuwe wedstrijden. Bestaande wedstrijden pas je aan via Bewerken.</p>
  <h3>Inzet telt mee in speeltijd</h3>
  <label><input type="checkbox" name="zon" ${Z().on?'checked':''} style="width:auto;min-height:0;margin-right:8px">Trainingsopkomst laat speeltijd meewegen</label>
- <div class="g2"><div><label>Telt vanaf</label><input type="date" name="zfrom" value="${esc(Z().from)}"></div><div><label>Invloed</label><select name="zw">${[10,20,30,40,50].map(x=>`<option value="${x}" ${Z().weight==x?'selected':''}>max ${x}% minder</option>`).join('')}</select></div></div>
+ <div class="g2"><div><label>Telt vanaf</label><input type="date" name="zfrom" value="${esc(Z().from)}"></div><div><label>Invloed</label><select name="zw">${[[10,'max 10% minder'],[20,'max 20% minder'],[30,'max 30% minder'],[33,'streng: tot clubminimum (halve wedstrijd)']].map(([x,t])=>`<option value="${x}" ${Z().weight==x?'selected':''}>${t}</option>`).join('')}</select></div></div>
  <label>Telt over</label><select name="zwin">${[[4,'laatste 4 trainingen (2 weken)'],[8,'laatste 8 trainingen (4 weken)'],[12,'laatste 12 trainingen (6 weken)'],[0,'alle trainingen']].map(([v,t])=>`<option value="${v}" ${Z().win==v?'selected':''}>${t}</option>`).join('')}</select>
  <label>Trainingsdagen</label><div class="row">${[1,2,3,4,5].map(d=>`<label style="margin:0"><input type="checkbox" name="zd${d}" ${Z().days.includes(d)?'checked':''} style="width:auto;min-height:0;margin-right:6px">${DAYS[d]}</label>`).join('')}</div>
  <div class="g2"><div><label>Aanwezig om</label><input type="time" name="zarr" value="${esc(Z().arrive)}"></div><div><label>Start training</label><input type="time" name="ztime" value="${esc(Z().time)}"></div></div>
@@ -441,7 +443,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Obj
   close();U.v='mx';U.mid=m.id;touch('matches/'+m.id)}
  else if(f.dataset.f==='p'){let p=id&&S.team.players.find(x=>x.id===id);if(!p){p={id:uid()};S.team.players.push(p)}
   Object.assign(p,{name:d.name.trim(),nr:d.nr.trim(),pos:d.pos.trim(),lvl:+d.lvl||2});close();touch('team/main')}
- else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+d.perMin||25,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-23',weight:+d.zw||20,win:+d.zwin,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:45'}});close();touch('team/main')}});
+ else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+d.perMin||25,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-16',weight:+d.zw||33,win:+d.zwin,v:2,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:50'}});close();touch('team/main')}});
 document.addEventListener('change',e=>{const k=e.target.dataset.ch;if(!k)return;const v=e.target.value;
  if(k==='mform')setForm(v);
  else if(k==='mnote'){cm().note=v;touch('matches/'+U.mid,true)}
