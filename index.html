@@ -274,7 +274,8 @@ function vMX(){
  const fid=onField(m),act=c.phase==='pre'?1:c.phase==='live'?c.half:0;
  if(m.lu&&!U.q)U.q=c.phase==='rust'?Math.min(m.per,c.half+1):c.phase==='live'?c.half:1;
  if(!m.lu){if(avail(m).length&&c.phase!=='end')h+=`<div class="card tip row"><span class="grow">Nog geen wisselplan.</span><button class="acc" data-a="mkplan">Maak wisselplan</button></div>`}
- else{const q=Math.min(m.per,Math.max(1,U.q||1)),isAct=q===act,L=m.lu[q]||{},F=isAct?m.field:L,prev=q===1?{}:(m.lu[q-1]||{}),pv=Object.values(prev),cv=Object.values(F);
+ else{if(c.phase==='pre'&&m.luSig!==planSig(m))h+=`<div class="card tip row" style="border-color:var(--no)"><span class="grow"><b>Plan is verouderd.</b><br><small>Aanwezigheid, spelers of trainingsopkomst is veranderd na het maken van het plan.</small></span><button class="acc" data-a="mkplan">Maak opnieuw</button></div>`;
+  const q=Math.min(m.per,Math.max(1,U.q||1)),isAct=q===act,L=m.lu[q]||{},F=isAct?m.field:L,prev=q===1?{}:(m.lu[q-1]||{}),pv=Object.values(prev),cv=Object.values(F);
   h+=`<div class="tabs" style="grid-template-columns:repeat(${m.per},minmax(0,1fr))">${Array.from({length:m.per},(_,i)=>`<button data-a="qtab" data-q="${i+1}" class="${q===i+1?'on':''}">${PA(m)}${i+1}${act===i+1?' ●':''}</button>`).join('')}</div>`;
   const ins=q>1?cv.filter(p=>!pv.includes(p)):[],outs=q>1?pv.filter(p=>!cv.includes(p)):[],hs=(m.hs&&m.hs[q])||[];
   h+=`<div class="card" style="margin-bottom:8px"><b>${PN(m).replace(/^./,x=>x.toUpperCase())} ${q}${isAct&&c.phase==='live'?' (nu bezig)':''}</b><br><small>${q===1?'Startopstelling':(ins.length?'Erin: <b>'+ins.map(p=>esc(short(p))).join(', ')+'</b>':'Geen wissels')+(outs.length?' · Eruit: <b>'+outs.map(p=>esc(short(p))).join(', ')+'</b>':'')}${F.K?' · Keeper: '+esc(short(F.K)):''}${hs.length?'<br>Halverwege ('+fm(m.perMin/2)+' min): '+hs.map(([o,i])=>esc(short(i))+' erin voor '+esc(short(o))).join(', '):''}</small><br><small class="mut">Tik op een speler om te wisselen of van plek te ruilen.</small></div>`;
@@ -323,7 +324,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 11</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 12</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -400,7 +401,8 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
   const K=mem[h].slice().sort((a,b)=>sc(a)-sc(b))[0];if(K)kc[K]=(kc[K]||0)+1;
   const members=mem[h].concat(qPairs[h].map(pr=>pr[0].id));
   lu[h]=buildLineup(m,prev,members,K);hsAll[h]=qPairs[h].map(pr=>[pr[0].id,pr[1].id])}
- m.lu=lu;m.hs=hsAll;delete m.plan}
+ m.lu=lu;m.hs=hsAll;delete m.plan;m.luSig=planSig(m)}
+function planSig(m){return avail(m).map(p=>p.id+':'+Math.round(factor(p.id)*100)+(m.att[p.id]==='l'?'l':'')).sort().join(',')}
 function setField(m,fld){const t=ct(m),trk=tracking(m),before=Object.assign({},m.field),oldIds=Object.values(before),nv=Object.values(fld);
  if(trk){for(const p of oldIds)if(!nv.includes(p))closeSt(m,p,t);
   for(const s in fld)if(before[s]!==fld[s]){if(oldIds.includes(fld[s]))closeSt(m,fld[s],t);openSt(m,fld[s],s,t)}
