@@ -324,7 +324,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 12</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 13</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -374,12 +374,18 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
   lo[p.id]=Math.max(0,Math.min(leftB,minB-d));hi[p.id]=Math.max(lo[p.id],Math.min(leftB,maxB-d));
   need[p.id]=Math.min(hi[p.id],Math.max(lo[p.id],Math.floor(ideal[p.id]+1e-9)))}
  const iz=p=>{const i=inzet(p.id);return i?i.rate*i.n:0},fr=p=>ideal[p.id]-need[p.id]+iz(p)*.01-done(p.id)*.001;
- let used=av.reduce((a,p)=>a+need[p.id],0);
- while(used<SB){const c=av.filter(p=>need[p.id]<hi[p.id]).sort((a,b)=>fr(b)-fr(a))[0];if(!c)break;need[c.id]++;used++}
- while(used>SB){const c=av.filter(p=>need[p.id]>lo[p.id]).sort((a,b)=>fr(a)-fr(b))[0];if(!c)break;need[c.id]--;used--}
+ const late=p=>z.lateBench&&m.att[p.id]==='l';
+ if((z.mode||'prio')==='prio'){/* minimum voor iedereen, extra tijd eerst naar trouwe en sterke spelers */
+  for(const p of av)need[p.id]=lo[p.id];
+  const tier=p=>{const f=factor(p.id);return f>=.95?2:f>=.8?1:0};
+  const key=p=>tier(p)*100+lvl(p.id)*10-(late(p)?5:0)+iz(p)*.01;
+  let used=av.reduce((a,p)=>a+need[p.id],0);
+  while(used<SB){const c=av.filter(p=>need[p.id]<hi[p.id]).sort((a,b)=>key(b)-key(a)||need[a.id]-need[b.id])[0];if(!c)break;need[c.id]++;used++}}
+ else{let used=av.reduce((a,p)=>a+need[p.id],0);
+  while(used<SB){const c=av.filter(p=>need[p.id]<hi[p.id]).sort((a,b)=>fr(b)-fr(a))[0];if(!c)break;need[c.id]++;used++}
+  while(used>SB){const c=av.filter(p=>need[p.id]>lo[p.id]).sort((a,b)=>fr(a)-fr(b))[0];if(!c)break;need[c.id]--;used--}}
  const Q=[];for(let h=from;h<=P;h++)Q.push(h);
  const whole={},odd=[];for(const p of av){whole[p.id]=Math.floor(need[p.id]/2);if(need[p.id]%2)odd.push(p)}
- const late=p=>z.lateBench&&m.att[p.id]==='l';
  odd.sort((a,b)=>late(a)-late(b)||fr(b)-fr(a));
  if(odd.length%2){const p=odd.pop();if(whole[p.id]<Q.length)whole[p.id]++}
  const pairs=[];const half=odd.length/2;for(let i=0;i<half;i++){let a=odd[i],b=odd[odd.length-1-i];if(late(a)&&!late(b))[a,b]=[b,a];pairs.push([a,b])}
@@ -402,7 +408,7 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
   const members=mem[h].concat(qPairs[h].map(pr=>pr[0].id));
   lu[h]=buildLineup(m,prev,members,K);hsAll[h]=qPairs[h].map(pr=>[pr[0].id,pr[1].id])}
  m.lu=lu;m.hs=hsAll;delete m.plan;m.luSig=planSig(m)}
-function planSig(m){return avail(m).map(p=>p.id+':'+Math.round(factor(p.id)*100)+(m.att[p.id]==='l'?'l':'')).sort().join(',')}
+function planSig(m){return (Z().mode||'prio')+avail(m).map(p=>p.id+':'+lvl(p.id)+':'+Math.round(factor(p.id)*100)+(m.att[p.id]==='l'?'l':'')).sort().join(',')}
 function setField(m,fld){const t=ct(m),trk=tracking(m),before=Object.assign({},m.field),oldIds=Object.values(before),nv=Object.values(fld);
  if(trk){for(const p of oldIds)if(!nv.includes(p))closeSt(m,p,t);
   for(const s in fld)if(before[s]!==fld[s]){if(oldIds.includes(fld[s]))closeSt(m,fld[s],t);openSt(m,fld[s],s,t)}
@@ -451,6 +457,7 @@ function shSettings(){const t=S.team;
  <h3>Inzet telt mee in speeltijd</h3>
  <label><input type="checkbox" name="zon" ${Z().on?'checked':''} style="width:auto;min-height:0;margin-right:8px">Trainingsopkomst laat speeltijd meewegen</label>
  <div class="g2"><div><label>Telt vanaf</label><input type="date" name="zfrom" value="${esc(Z().from)}"></div><div><label>Invloed</label><select name="zw">${[[10,'max 10% minder'],[20,'max 20% minder'],[30,'max 30% minder'],[33,'streng: tot clubminimum (halve wedstrijd)']].map(([x,t])=>`<option value="${x}" ${Z().weight==x?'selected':''}>${t}</option>`).join('')}</select></div></div>
+ <label>Verdeling extra speeltijd</label><select name="zmode"><option value="prio" ${(Z().mode||'prio')==='prio'?'selected':''}>Eerst trouwe en sterke spelers (iedereen minimaal de helft)</option><option value="gelijk" ${Z().mode==='gelijk'?'selected':''}>Zo gelijk mogelijk, alleen opkomst telt</option></select>
  <label>Telt over</label><select name="zwin">${[[4,'laatste 4 trainingen (2 weken)'],[8,'laatste 8 trainingen (4 weken)'],[12,'laatste 12 trainingen (6 weken)'],[0,'alle trainingen']].map(([v,t])=>`<option value="${v}" ${Z().win==v?'selected':''}>${t}</option>`).join('')}</select>
  <label>Trainingsdagen</label><div class="row">${[1,2,3,4,5].map(d=>`<label style="margin:0"><input type="checkbox" name="zd${d}" ${Z().days.includes(d)?'checked':''} style="width:auto;min-height:0;margin-right:6px">${DAYS[d]}</label>`).join('')}</div>
  <div class="g2"><div><label>Aanwezig om</label><input type="time" name="zarr" value="${esc(Z().arrive)}"></div><div><label>Start training</label><input type="time" name="ztime" value="${esc(Z().time)}"></div></div>
@@ -551,7 +558,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Obj
   close();U.v='mx';U.mid=m.id;touch('matches/'+m.id)}
  else if(f.dataset.f==='p'){let p=id&&S.team.players.find(x=>x.id===id);if(!p){p={id:uid()};S.team.players.push(p)}
   Object.assign(p,{name:d.name.trim(),nr:d.nr.trim(),pos:d.pos.trim(),lvl:+d.lvl||2});close();touch('team/main')}
- else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+String(d.perMin).replace(',','.')||12.5,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-16',weight:+d.zw||33,win:+d.zwin,v:2,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:50'}});close();touch('team/main')}});
+ else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+String(d.perMin).replace(',','.')||12.5,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-16',weight:+d.zw||33,win:+d.zwin,mode:d.zmode||'prio',v:2,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:50'}});close();touch('team/main')}});
 document.addEventListener('change',e=>{const k=e.target.dataset.ch;if(!k)return;const v=e.target.value;
  if(k==='mform')setForm(v);
  else if(k==='mnote'){cm().note=v;touch('matches/'+U.mid,true)}
