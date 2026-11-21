@@ -164,7 +164,7 @@ const res=m=>{const [f,a]=score(m);return f>a?'W':f<a?'V':'G'};
 const openSt=(m,p,s,t)=>m.stints.push({p,s,a:t,b:null});
 const closeSt=(m,p,t)=>{for(const s of m.stints)if(s.p===p&&s.b==null)s.b=t};
 const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).map(k=>`<option value="${n}|${k}" ${+n===+size&&k===form?'selected':''}>${n} tegen ${n} · ${k}</option>`).join('')).join('');
-const save=()=>touch('matches/'+U.mid);
+const save=()=>{const m=cm(),q=U.autoQ;U.autoQ=0;if(m&&m.lu&&q){if(q===actQ(m))m.lu[q]=Object.assign({},m.field);if(q===1&&m.clock.phase==='pre')m.k1=true;if(q<m.per&&m.clock.phase!=='end')makePlan(m,q+1)}touch('matches/'+U.mid)};
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk'};
 const PN=m=>m.per===4?'kwart':m.per===2?'helft':'periode';const PA=m=>m.per===4?'K':m.per===2?'H':'P';const fm=x=>String(x).replace('.',',');
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
@@ -288,7 +288,7 @@ function vMX(){
   const av=avail(m),sym={F:'●',K:'K','1':'½▸','2':'▸½','':'·'};
   h+=`<h3>Overzicht speeltijd</h3><div class="card scroll"><table><tr><th>Speler</th>${Array.from({length:m.per},(_,i)=>`<th>${PA(m)}${i+1}</th>`).join('')}<th>Gepland</th><th>Gespeeld</th></tr>`+
    av.map(p=>{const iz=inzet(p.id);return `<tr><td>${esc(short(p.id))} <small>${iz?Math.round(iz.rate*100)+'%':''}${m.att[p.id]==='l'?' laat':''}</small></td>${Array.from({length:m.per},(_,i)=>`<td>${sym[planEntry(m,i+1,p.id)]}</td>`).join('')}<td>${(x=>x>=m.per*m.perMin*60?'<b style="color:var(--no)">⚠ '+fm(x/60)+"' hele wedstrijd</b>":x<m.per*m.perMin*30?'<b style="color:var(--no)">⚠ '+fm(x/60)+"' onder minimum</b>":fm(x/60)+"'")(planMin(m,p.id))}</td><td data-min="${p.id}">${mins(pmin(m,p.id,t))}</td></tr>`}).join('')+
-   `</table><small>● hele ${PN(m)} · K keeper · ½▸ eerste helft van het ${PN(m)} · ▸½ tweede helft. % = trainingsopkomst.</small><div class="row" style="margin-top:8px"><button data-a="mkplan" class="grow">${c.phase==='pre'?'Plan opnieuw maken':'Herbereken rest van de wedstrijd'}</button></div></div>`}
+   `</table><small>● hele ${PN(m)} · K keeper · ½▸ eerste helft van het ${PN(m)} · ▸½ tweede helft. % = trainingsopkomst.</small><div class="row" style="margin-top:8px"><button data-a="mkplan" class="grow">${c.phase==='pre'?(m.k1?'Herbereken K2-K4 (jouw K1 blijft)':'Plan opnieuw maken'):'Herbereken rest van de wedstrijd'}</button>${c.phase==='pre'&&m.k1?'<button data-a="mkplan" data-all="1">Alles opnieuw</button>':''}</div><small class="mut">Pas je een kwart aan, dan rekent de app de kwarten daarna automatisch opnieuw uit.</small></div>`}
  h+=`<label>Spelvorm en opstelling</label><select data-ch="mform">${formOpts(m.size,m.form)}</select>`;
  return h}
 
@@ -324,7 +324,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 13</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 14</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -367,7 +367,10 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
  const lu=Object.assign({},m.lu||{}),hsAll=Object.assign({},m.hs||{});for(let h=from;h<=P;h++){delete lu[h];delete hsAll[h]}
  const nn=Math.min(n,av.length),B=P*2,TB=B*nn,leftB=(P-from+1)*2,SB=leftB*nn;
  const L=m.perMin*60,tNow=ct(m),restQ=m.clock.phase==='live'?Math.max(0,L-(tNow-m.clock.ps)):0,fNow=onField(m);
- const done=id=>from>1?Math.round((pmin(m,id,tNow)+(fNow.includes(id)?restQ:0))/(L/2)):0;
+ const lastQ=m.clock.phase==='pre'?0:m.clock.half,avIds=av.map(p=>p.id);
+ for(let q=lastQ+1;q<from;q++){if(lu[q])for(const k in lu[q])if(!avIds.includes(lu[q][k]))delete lu[q][k];if(hsAll[q])hsAll[q]=hsAll[q].filter(x=>x.every(i=>avIds.includes(i)))}
+ m.lu=lu;m.hs=hsAll;
+ const done=id=>{let b=0;if(lastQ>0)b+=(pmin(m,id,tNow)+(fNow.includes(id)?restQ:0))/(L/2);for(let q=lastQ+1;q<from;q++){const e=planEntry(m,q,id);b+=e==='F'||e==='K'?2:e?1:0}return Math.round(b)};
  let maxB=B-1;if(av.length*maxB<TB)maxB=B;const minB=Math.min(maxB,Math.ceil(B/2));
  const sf=av.reduce((a,p)=>a+factor(p.id),0),ideal={},need={},lo={},hi={};
  for(const p of av){const d=done(p.id);ideal[p.id]=Math.min(maxB,Math.max(minB,TB*factor(p.id)/sf))-d;
@@ -402,7 +405,7 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
    const p=pool.splice(bi,1)[0];pick.push(p);sum+=lvl(p.id);cnt++}
   mem[h]=pick.map(p=>p.id);pick.forEach(p=>rem[p.id]--)}
  const kc={};for(let h=1;h<from;h++)if(lu[h]&&lu[h].K)kc[lu[h].K]=(kc[lu[h].K]||0)+1;
- for(const h of Q){const prev=h===1?{}:(h===from&&m.clock.phase!=='pre'?Object.assign({},m.field):(lu[h-1]||{}));const pk=prev.K;
+ for(const h of Q){const prev=h===1?{}:(h===from&&from===lastQ+1&&m.clock.phase!=='pre'?Object.assign({},m.field):(lu[h-1]||{}));const pk=prev.K;
   const sc=id=>{const p=S.team.players.find(x=>x.id===id)||{};return (pk===id?-200:0)+(isK(p)?-100:0)+(kc[id]||0)*10+seasonK(id)/600};
   const K=mem[h].slice().sort((a,b)=>sc(a)-sc(b))[0];if(K)kc[K]=(kc[K]||0)+1;
   const members=mem[h].concat(qPairs[h].map(pr=>pr[0].id));
@@ -513,9 +516,9 @@ const act={
  pickIn:(d,b)=>{U.pick[d.o]=d.p;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('acc',x===b))},
  doSubs:()=>doSubs(),
  openSubs:()=>{const m=cm();popSubs(m,m.clock.half+1,'q')},
- put:d=>{close();const m=cm(),q=+d.q||actQ(m);if(!q||q===actQ(m)){put(d.s,d.p);if(m.lu&&q)m.lu[q]=Object.assign({},m.field)}else{const L=fieldOf(m,q),cur=Object.keys(L).find(k=>L[k]===d.p);if(cur){const o=L[d.s];if(o)L[cur]=o;else delete L[cur]}L[d.s]=d.p;save()}},
- swap:d=>{close();const m=cm(),q=+d.q||actQ(m);if(!q||q===actQ(m)){swap(d.s,d.s2);if(m.lu&&q)m.lu[q]=Object.assign({},m.field)}else{const L=fieldOf(m,q),a=L[d.s],b=L[d.s2];if(b)L[d.s]=b;else delete L[d.s];if(a)L[d.s2]=a;else delete L[d.s2];save()}},
- out:d=>{close();const m=cm(),q=+d.q||actQ(m);if(q&&q!==actQ(m)){delete fieldOf(m,q)[d.s];save();return}const p=m.field[d.s];if(tracking(m)){closeSt(m,p,ct(m));m.events.push({id:uid(),type:'wissel',t:ct(m),h:m.clock.half,p:null,o:p})}delete m.field[d.s];if(m.lu&&q)m.lu[q]=Object.assign({},m.field);save()},
+ put:d=>{close();const m=cm(),q=+d.q||actQ(m);U.autoQ=q;if(!q||q===actQ(m)){put(d.s,d.p);if(m.lu&&q)m.lu[q]=Object.assign({},m.field)}else{const L=fieldOf(m,q),cur=Object.keys(L).find(k=>L[k]===d.p);if(cur){const o=L[d.s];if(o)L[cur]=o;else delete L[cur]}L[d.s]=d.p;save()}},
+ swap:d=>{close();const m=cm(),q=+d.q||actQ(m);U.autoQ=q;if(!q||q===actQ(m)){swap(d.s,d.s2);if(m.lu&&q)m.lu[q]=Object.assign({},m.field)}else{const L=fieldOf(m,q),a=L[d.s],b=L[d.s2];if(b)L[d.s]=b;else delete L[d.s];if(a)L[d.s2]=a;else delete L[d.s2];save()}},
+ out:d=>{close();const m=cm(),q=+d.q||actQ(m);U.autoQ=q;if(q&&q!==actQ(m)){delete fieldOf(m,q)[d.s];save();return}const p=m.field[d.s];if(tracking(m)){closeSt(m,p,ct(m));m.events.push({id:uid(),type:'wissel',t:ct(m),h:m.clock.half,p:null,o:p})}delete m.field[d.s];if(m.lu&&q)m.lu[q]=Object.assign({},m.field);save()},
  kick:()=>{const m=cm(),c=m.clock;if(!onField(m).length)return;Object.assign(c,{phase:'live',runAt:Date.now(),half:1,ps:0,acc:0});m.stints=[];for(const s in m.field)openSt(m,m.field[s],s,0);save()},
  pause:()=>{const c=cm().clock;if(c.runAt){c.acc=ct(cm());c.runAt=null}else c.runAt=Date.now();save()},
  endp:()=>{const m=cm(),c=m.clock;close();c.acc=ct(m);c.runAt=null;if(c.half>=m.per)act.endm();else{c.phase='rust';U.q=c.half+1;save();if(m.lu)popSubs(m,c.half+1,'q')}},
@@ -523,7 +526,7 @@ const act={
  endm:()=>{const m=cm(),c=m.clock,t=ct(m);c.acc=t;c.runAt=null;c.phase='end';for(const p of onField(m))closeSt(m,p,t);save()},
  reopen:()=>{const m=cm(),c=m.clock;c.phase='rust';for(const s in m.field)openSt(m,m.field[s],s,c.acc);save()},
  auto:()=>autoLineup(cm()),
- mkplan:()=>{const m=cm(),ph=m.clock.phase;if(ph==='end')return;const from=ph==='pre'?1:(ph==='live'&&!onField(m).length)?m.clock.half:m.clock.half+1;if(from>m.per){save();return}
+ mkplan:d=>{const m=cm(),ph=m.clock.phase;if(ph==='end')return;const from=ph==='pre'?(m.k1&&!d.all&&m.lu?2:1):(ph==='live'&&!onField(m).length)?m.clock.half:m.clock.half+1;if(d.all)m.k1=false;if(from>m.per){save();return}
   makePlan(m,from);if(ph==='pre')setField(m,m.lu[1]);else if(ph==='live'&&onField(m).length<slots(m).length)setField(m,m.lu[from]);U.q=ph==='pre'?1:from;save()},
  resetM:(d,b)=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Zeker? Alles van deze wedstrijd wissen';return}
   const m=cm();m.clock={acc:0,runAt:null,half:1,ps:0,phase:'pre'};m.stints=[];m.events=[];m.man=null;save()},
