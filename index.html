@@ -166,7 +166,7 @@ const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).ma
 const save=()=>touch('matches/'+U.mid);
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk'};
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
-const Z=()=>Object.assign({on:true,from:'2026-11-23',weight:20,lateBench:true,days:[2,4],time:'18:00',arrive:'17:45'},S.team.inzet||{});
+const Z=()=>Object.assign({on:true,from:'2026-11-23',weight:20,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:45'},S.team.inzet||{});
 function ensureTrainings(){const z=Z();if(!z.days||!z.days.length)return;const end=new Date();end.setDate(end.getDate()+7);
  const d=new Date(z.from+'T12:00');let made=false;
  for(let i=0;i<400&&d<=end;i++,d.setDate(d.getDate()+1)){if(!z.days.includes(d.getDay()))continue;
@@ -174,7 +174,7 @@ function ensureTrainings(){const z=Z();if(!z.days||!z.days.length)return;const e
   if(!S.trainings[id]){S.trainings[id]={id,date:ds,time:z.time,att:{},note:'',u:0};dirty.add('trainings/'+id);made=true}}
  if(made){persist();clearTimeout(ft);ft=setTimeout(flush,700)}}
 function inzet(pid){const z=Z();let n=0,s=0;
- for(const t of Ts()){if(t.date<z.from||t.date>today())continue;const v=t.att[pid];if(!v||v==='z')continue;n++;s+=v==='a'?1:v==='l'?.5:0}
+ for(const t of Ts()){if(t.date<z.from||t.date>today())continue;const v=t.att[pid];if(!v)continue;if(z.win&&n>=z.win)break;n++;s+=v==='a'?1:v==='l'?.5:0}
  return n?{n,rate:s/n}:null}
 function factor(pid){const z=Z();if(!z.on)return 1;const i=inzet(pid);return i?1-(z.weight/100)*(1-i.rate):1}
 function targets(m){const n=slots(m).length,len=m.per*m.perMin*60,av=avail(m);const W={};let sw=0;
@@ -308,11 +308,11 @@ function vP(){
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
  return P().map(p=>{let mA=0,mT=0,tA=0,tT=0,late=0,mn=0,pos=0,g=0,as=0,k=0;const sl={};
-  for(const m of ms){const v=m.att[p.id];if(v&&v!=='z'&&m.date<=td){mT++;if(v!=='x')mA++;if(v==='l')late++}
+  for(const m of ms){const v=m.att[p.id];if(v&&m.date<=td){mT++;if(v!=='x'&&v!=='z')mA++;if(v==='l')late++}
    if(m.stints.length){const t=ct(m),len=m.clock.phase==='end'?m.clock.acc:t;if(v!=='x'&&v!=='z'&&(v||pmin(m,p.id,t)>0))pos+=len;
     for(const s of m.stints)if(s.p===p.id){const d=(s.b??t)-s.a;mn+=d;sl[s.s]=(sl[s.s]||0)+d;if(s.s==='K')k+=d}}
    for(const e of m.events)if(e.type==='goal'){if(e.p===p.id)g++;if(e.as===p.id)as++}}
-  for(const t of ts){const v=t.att[p.id];if(v&&v!=='z'){tT++;if(v!=='x')tA++;if(v==='l')late++}}
+  for(const t of ts){const v=t.att[p.id];if(v){tT++;if(v!=='x'&&v!=='z')tA++;if(v==='l')late++}}
   const top=Object.entries(sl).sort((a,b)=>b[1]-a[1])[0];
   return {p,mA,mT,tA,tT,late,mn,pct:pos?Math.round(100*mn/pos):null,g,as,k,top:top?top[0]:''}})}
 function vS(){
@@ -321,7 +321,7 @@ function vS(){
  const sorted=st.slice().sort((a,b)=>b.mn-a.mn);
  return `<h2>Statistiek seizoen</h2><div class="card scroll"><table><tr><th>Speler</th><th>Wedstr.</th><th>Train.</th><th>Laat</th><th>Min</th><th>%</th><th>G</th><th>A</th><th>Keeper</th><th>Positie</th><th>Inzet</th></tr>`+
   sorted.map(s=>`<tr><td>${esc(s.p.name)}</td><td>${s.mA}/${s.mT}</td><td>${s.tA}/${s.tT}</td><td>${s.late}</td><td>${mins(s.mn)}</td><td>${s.pct==null?'–':s.pct+'%'}</td><td>${s.g}</td><td>${s.as}</td><td>${s.k?mins(s.k):'–'}</td><td>${esc(s.top)}</td><td>${(i=>i?Math.round(i.rate*100)+'%':'–')(inzet(s.p.id))}</td></tr>`).join('')+
-  `</table></div><p class="mut">Wedstr./Train. = aanwezig van keren dat aanwezigheid is ingevuld (ziek/blessure telt niet mee). % = speelminuten t.o.v. gespeelde tijd in wedstrijden waarbij de speler er was. Inzet = trainingsopkomst vanaf de startdatum (te laat telt half).</p>`}
+  `</table></div><p class="mut">Wedstr./Train. = aanwezig van keren dat aanwezigheid is ingevuld (ziek/blessure telt als afwezig). % = speelminuten t.o.v. gespeelde tijd in wedstrijden waarbij de speler er was. Inzet = trainingsopkomst over de ingestelde periode (te laat telt half, ziek telt als afwezig).</p>`}
 
 function render(){
  $('#ttl').innerHTML=`Trainer <b>${esc(S.team.name)}</b>`;
@@ -352,11 +352,12 @@ function shSettings(){const t=S.team;
  <p class="mut">Geldt voor nieuwe wedstrijden. Bestaande wedstrijden pas je aan via Bewerken.</p>
  <h3>Inzet telt mee in speeltijd</h3>
  <label><input type="checkbox" name="zon" ${Z().on?'checked':''} style="width:auto;min-height:0;margin-right:8px">Trainingsopkomst laat speeltijd meewegen</label>
- <div class="g2"><div><label>Telt vanaf</label><input type="date" name="zfrom" value="${esc(Z().from)}"></div><div><label>Invloed</label><select name="zw">${[10,20,30].map(x=>`<option value="${x}" ${Z().weight==x?'selected':''}>max ${x}% minder</option>`).join('')}</select></div></div>
+ <div class="g2"><div><label>Telt vanaf</label><input type="date" name="zfrom" value="${esc(Z().from)}"></div><div><label>Invloed</label><select name="zw">${[10,20,30,40,50].map(x=>`<option value="${x}" ${Z().weight==x?'selected':''}>max ${x}% minder</option>`).join('')}</select></div></div>
+ <label>Telt over</label><select name="zwin">${[[4,'laatste 4 trainingen (2 weken)'],[8,'laatste 8 trainingen (4 weken)'],[12,'laatste 12 trainingen (6 weken)'],[0,'alle trainingen']].map(([v,t])=>`<option value="${v}" ${Z().win==v?'selected':''}>${t}</option>`).join('')}</select>
  <label>Trainingsdagen</label><div class="row">${[1,2,3,4,5].map(d=>`<label style="margin:0"><input type="checkbox" name="zd${d}" ${Z().days.includes(d)?'checked':''} style="width:auto;min-height:0;margin-right:6px">${DAYS[d]}</label>`).join('')}</div>
  <div class="g2"><div><label>Aanwezig om</label><input type="time" name="zarr" value="${esc(Z().arrive)}"></div><div><label>Start training</label><input type="time" name="ztime" value="${esc(Z().time)}"></div></div>
  <label><input type="checkbox" name="zlate" ${Z().lateBench?'checked':''} style="width:auto;min-height:0;margin-right:8px">Te laat bij wedstrijd: begint op de bank</label>
- <p class="mut">Training aanwezig telt 1, te laat 0,5, afwezig 0. Wie alles mist, krijgt het ingestelde percentage minder speeltijd dan het eerlijke deel; wie er altijd is krijgt het volle deel. Iedereen speelt minimaal een halve wedstrijd (clubregel Blauw Geel).</p>
+ <p class="mut">Training op tijd telt 1, te laat 0,5, afwezig of ziek 0. Wie alles mist, krijgt het ingestelde percentage minder speeltijd dan het eerlijke deel; wie er altijd is krijgt het volle deel. Iedereen speelt minimaal een halve wedstrijd (clubregel Blauw Geel).</p>
  <div class="row" style="margin-top:14px"><button class="pri grow">Opslaan</button></div></form>`)}
 function shSlot(s){const m=cm(),t=ct(m),pid=m.field[s],trk=tracking(m)||m.clock.phase==='end';
  const b=bench(m).map(p=>({p,mn:pmin(m,p.id,t)})).sort((x,y)=>x.mn-y.mn);
@@ -440,7 +441,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Obj
   close();U.v='mx';U.mid=m.id;touch('matches/'+m.id)}
  else if(f.dataset.f==='p'){let p=id&&S.team.players.find(x=>x.id===id);if(!p){p={id:uid()};S.team.players.push(p)}
   Object.assign(p,{name:d.name.trim(),nr:d.nr.trim(),pos:d.pos.trim(),lvl:+d.lvl||2});close();touch('team/main')}
- else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+d.perMin||25,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-23',weight:+d.zw||20,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:45'}});close();touch('team/main')}});
+ else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+d.perMin||25,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-23',weight:+d.zw||20,win:+d.zwin,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:45'}});close();touch('team/main')}});
 document.addEventListener('change',e=>{const k=e.target.dataset.ch;if(!k)return;const v=e.target.value;
  if(k==='mform')setForm(v);
  else if(k==='mnote'){cm().note=v;touch('matches/'+U.mid,true)}
