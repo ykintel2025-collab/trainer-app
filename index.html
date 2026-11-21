@@ -168,7 +168,8 @@ const save=()=>touch('matches/'+U.mid);
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk'};
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
 const ZD={on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
-if(!S.team.inzet||S.team.inzet.v!==2){S.team.inzet=Object.assign({},S.team.inzet||{},{from:'2026-11-16',weight:33,arrive:'17:50',v:2});S.team.u=Date.now();setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}
+function migrate(){if(!S.team.inzet||S.team.inzet.v!==2){S.team.inzet=Object.assign({},S.team.inzet||{},{from:'2026-11-16',weight:33,arrive:'17:50',v:2});S.team.u=Date.now();setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}}
+migrate();
 const Z=()=>Object.assign({},ZD,S.team.inzet||{});
 function ensureTrainings(){const z=Z();if(!z.days||!z.days.length)return;const end=new Date();end.setDate(end.getDate()+7);
  const d=new Date(z.from+'T12:00');let made=false;
@@ -250,11 +251,18 @@ function vMX(){
  if(U.mtab==='vers')return h+vVerslag(m);
  const t=ct(m),c=m.clock,trk=tracking(m),fin=c.phase==='end';
  let btns='';
- if(c.phase==='pre')btns=`<button class="acc grow" data-a="kick">Aftrap</button>`;
+ const nS=slots(m).length,nF=onField(m).length,nAv=avail(m).length,need=Math.min(nS,nAv),ready=nAv>0&&nF>=need;
+ if(c.phase==='pre')btns=ready?`<button class="acc grow" data-a="kick">Aftrap</button>`:`<button class="grow" disabled>Aftrap (eerst stap 1 en 2)</button>`;
  else if(c.phase==='live')btns=`<button class="grow" data-a="pause">${c.runAt?'Pauze':'Hervat'}</button><button class="pri grow" data-a="endp">${c.half>=m.per?'Einde wedstrijd':'Einde periode '+c.half}</button>`;
  else if(c.phase==='rust')btns=`<button class="acc grow" data-a="nextp">Start periode ${c.half+1}</button><button class="grow" data-a="endm">Einde wedstrijd</button>`;
  else btns=`<span class="grow mut">Afgelopen (${mins(c.acc)} gespeeld)</span><button data-a="reopen">Heropen</button>`;
+ if(c.phase!=='pre')btns+=`<button class="dng" data-a="resetM">Reset</button>`;
  const last=m.events.filter(e=>e.type!=='wissel').slice(-1)[0];
+ if(c.phase==='pre'){const ps=P(),filled=ps.filter(p=>m.att[p.id]).length,st1=ps.length&&filled===ps.length,st2=!!m.plan&&nF>=need&&nAv>0;
+  h+=`<div class="card"><b>Voor de wedstrijd</b>
+  <div class="prow"><span class="grow">${st1?'✓':'1.'} Aanwezigheid invullen <small>(${filled}/${ps.length})</small></span>${st1?'':`<button class="acc" data-a="mtab" data-t="aanw">Invullen</button>`}</div>
+  <div class="prow"><span class="grow">${st2?'✓':'2.'} Wisselplan + opstelling <small>${m.plan?'(klaar, aan te passen hieronder)':''}</small></span>${st2?'':`<button class="${st1?'acc':''}" data-a="mkplan" ${nAv?'':'disabled'}>Maak plan</button>`}</div>
+  <div class="prow"><span class="grow">${ready&&st2?'3. Klaar: tik op Aftrap':'3. Aftrap'}</span></div></div>`}
  h+=`<div class="card"><div class="ctl"><div><div class="clock" data-clock>${mmss(t-c.ps)}</div><small>${c.phase==='pre'?'Nog niet begonnen':fin?'Afgelopen':'Periode '+c.half+' van '+m.per+' · totaal '+mins(t)}${c.phase==='live'&&!c.runAt?' · gepauzeerd':''}</small></div>
  <div><div class="score">${f} - ${a}</div><small>wij - ${esc(m.opp||'zij')}</small></div></div>
  <div class="row" style="margin-top:10px">${btns}</div>
@@ -306,7 +314,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21 nov 06:30</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -367,7 +375,7 @@ function applyPeriod(m,h){const ids=(m.plan&&m.plan[h])||[];const t=ct(m),trk=tr
 function planView(m){const c=m.clock,P=m.per;if(c.phase==='end')return '';
  const nextH=c.phase==='pre'?1:c.phase==='rust'?c.half+1:0;
  let h='';
- if(!m.plan){return c.phase==='pre'&&avail(m).length?`<div class="row" style="margin-bottom:10px"><button class="acc grow" data-a="mkplan">Maak wisselplan per ${P===2?'helft':'periode'}</button></div>`:''}
+ if(!m.plan){return c.phase!=='pre'&&avail(m).length?`<div class="card tip row"><span class="grow">Nog geen wisselplan.</span><button class="acc" data-a="mkplan">Maak wisselplan</button></div>`:''}
  const av=avail(m),len=m.perMin;
  h+=`<div class="card"><div class="row"><b class="grow">Wisselplan</b><button data-a="mkplan">Opnieuw</button></div><div class="scroll"><table><tr><th>Speler</th>${Array.from({length:P},(_,i)=>`<th>${P===2?'H':'P'}${i+1}</th>`).join('')}<th>Min</th></tr>`+
   av.map(p=>{let k=0;const cells=Array.from({length:P},(_,i)=>{const on=(m.plan[i+1]||[]).includes(p.id);if(on)k++;const lock=c.phase!=='pre'&&i+1<=c.half;
@@ -443,7 +451,7 @@ function setForm(v){const m=cm(),[n,f]=v.split('|'),old=slots(m).map(x=>x[0]),t=
  m.field=fld;save()}
 const act={
  nav:d=>{U.v=d.v;U.tid=null;close();render();scrollTo(0,0)},
- openM:d=>{U.v='mx';U.mid=d.id;const m=cm();U.mtab=Object.keys(m.att).length||tracking(m)?'veld':'aanw';render();scrollTo(0,0)},
+ openM:d=>{U.v='mx';U.mid=d.id;const m=cm();U.mtab='veld';render();scrollTo(0,0)},
  mtab:d=>{U.mtab=d.t;render()},
  newM:()=>shMatch(null),editM:()=>shMatch(cm()),
  att:d=>{const o=d.k==='m'?S.matches[d.id]:S.trainings[d.id];if(o.att[d.p]===d.v)delete o.att[d.p];else o.att[d.p]=d.v;
@@ -453,14 +461,17 @@ const act={
  slot:d=>shSlot(d.s),benchP:d=>shBench(d.p),
  put:d=>{close();put(d.s,d.p)},swap:d=>{close();swap(d.s,d.s2)},
  out:d=>{close();const m=cm(),p=m.field[d.s];if(tracking(m)){closeSt(m,p,ct(m));m.events.push({id:uid(),type:'wissel',t:ct(m),h:m.clock.half,p:null,o:p})}delete m.field[d.s];save()},
- kick:()=>{const m=cm(),c=m.clock;Object.assign(c,{phase:'live',runAt:Date.now(),half:1,ps:0,acc:0});m.stints=[];for(const s in m.field)openSt(m,m.field[s],s,0);save()},
+ kick:()=>{const m=cm(),c=m.clock;if(!onField(m).length)return;Object.assign(c,{phase:'live',runAt:Date.now(),half:1,ps:0,acc:0});m.stints=[];for(const s in m.field)openSt(m,m.field[s],s,0);save()},
  pause:()=>{const c=cm().clock;if(c.runAt){c.acc=ct(cm());c.runAt=null}else c.runAt=Date.now();save()},
  endp:()=>{const m=cm(),c=m.clock;c.acc=ct(m);c.runAt=null;if(c.half>=m.per)act.endm();else{c.phase='rust';save()}},
  nextp:()=>{const c=cm().clock;c.half++;c.ps=c.acc;c.runAt=Date.now();c.phase='live';save()},
  endm:()=>{const m=cm(),c=m.clock,t=ct(m);c.acc=t;c.runAt=null;c.phase='end';for(const p of onField(m))closeSt(m,p,t);save()},
  reopen:()=>{const m=cm(),c=m.clock;c.phase='rust';for(const s in m.field)openSt(m,m.field[s],s,c.acc);save()},
  auto:()=>autoLineup(cm()),
- mkplan:()=>{const m=cm();makePlan(m,m.clock.phase==='pre'?1:m.clock.half+1);if(m.clock.phase==='pre')applyPeriod(m,1);save()},
+ mkplan:()=>{const m=cm(),ph=m.clock.phase,from=ph==='pre'?1:ph==='live'?m.clock.half:m.clock.half+1;if(from>m.per){save();return}
+  makePlan(m,from);if(ph==='pre'||(ph==='live'&&onField(m).length<slots(m).length))applyPeriod(m,from);save()},
+ resetM:(d,b)=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Zeker? Alles van deze wedstrijd wissen';return}
+  const m=cm();m.clock={acc:0,runAt:null,half:1,ps:0,phase:'pre'};m.stints=[];m.events=[];m.man=null;save()},
  replan:()=>{const m=cm();makePlan(m,m.clock.half+1);save()},
  tgl:d=>{const m=cm(),h=+d.h;m.plan[h]=m.plan[h]||[];const a=m.plan[h];const i=a.indexOf(d.p);if(i>=0)a.splice(i,1);else a.push(d.p);if(m.clock.phase==='pre'&&h===1)applyPeriod(m,1);save()},
  applyP:d=>{const m=cm();applyPeriod(m,+d.h);save()},
@@ -510,7 +521,7 @@ try{const h=location.hash;if(h.indexOf('#import=')===0){
  if(o&&o.team){if(!P().length){S.team=Object.assign(o.team,{u:n});dirty.add('team/main')}
   for(const c of ['matches','trainings'])for(const id in (o[c]||{}))if(!S[c][id]){S[c][id]=Object.assign(o[c][id],{u:n});dirty.add(c+'/'+id)}
   persist()}
- history.replaceState(null,'',location.pathname+location.search)}}catch(e){}
+ migrate();history.replaceState(null,'',location.pathname+location.search)}}catch(e){}
 render();connect();
 try{if('serviceWorker' in navigator&&location.protocol==='https:'&&location.hostname.endsWith('github.io'))navigator.serviceWorker.register('sw.js')}catch(e){}
 }
