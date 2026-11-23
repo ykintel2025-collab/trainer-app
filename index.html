@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v25</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v26</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -168,7 +168,7 @@ const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).ma
 const save=()=>{const m=cm(),q=U.autoQ;U.autoQ=0;if(m&&m.lu&&q){if(q===actQ(m))m.lu[q]=Object.assign({},m.field);if(q===1&&m.clock.phase==='pre')m.k1=true;if(q<m.per&&m.clock.phase!=='end')makePlan(m,q+1)}touch('matches/'+U.mid)};
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk',4:'Top'};
 const POSN={K:'Keeper',LV:'Linksachter',RV:'Rechtsachter',CV:'Centrale verdediger',V:'Verdediger',LM:'Linkermiddenvelder',RM:'Rechtermiddenvelder',CM:'Centrale middenvelder',M:'Middenvelder',LA:'Linksbuiten',RA:'Rechtsbuiten',SP:'Spits',A:'Achter',L:'Links',R:'Rechts',S:'Spits'};
-const usedForm=()=>{const f=(S.team.ideal&&S.team.ideal.form)||S.team.form,z=+((S.team.ideal&&S.team.ideal.size)||S.team.size);return ((FORMS[z]||FORMS[6])[f]||Object.values(FORMS[z]||FORMS[6])[0]).map(x=>x[0]).filter(c=>c!=='K')};
+const usedForm=()=>{if(S.team.coords){const c=S.team.coords.c;return ['LV','CV','RV','LM','CM','RM','LA','SP','RA']}const f=(S.team.ideal&&S.team.ideal.form)||S.team.form,z=+((S.team.ideal&&S.team.ideal.size)||S.team.size);return ((FORMS[z]||FORMS[6])[f]||Object.values(FORMS[z]||FORMS[6])[0]).map(x=>x[0]).filter(c=>c!=='K')};
 const PN=m=>m.per===4?'kwart':m.per===2?'helft':'periode';const PA=m=>m.per===4?'K':m.per===2?'H':'P';const fm=x=>String(x).replace('.',',');
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
 const ZD={on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
@@ -262,9 +262,16 @@ function vMX(){
  if(U.mtab==='vers')return h+vVerslag(m);
  if(U.mtab==='prep')return h+vPrep(m);
  return h+vLive(m)}
-function pitchHtml(m,F,q,edit){const t=ct(m),live=q===actQ(m)&&m.clock.phase!=='pre';
- return `<div class="pitch"><div class="mid"></div><div class="cir"></div>`+slots(m).map(([s,x,y])=>{const p=F[s];
-  return `<button class="slot ${s==='K'?'K':''} ${p?'':'empty'}" style="left:${x}%;top:${y}%" ${edit?`data-a="slot" data-s="${s}" data-q="${q}"`:''}><span class="dot">${s}</span><span class="nm">${p?esc(short(p)):'leeg'}</span>${p&&live?`<span class="mn" data-min="${p}">${mins(pmin(m,p,t))}</span>`:''}</button>`}).join('')+'</div>'}
+function coordsOf(m){const c={};for(const [s,x,y] of slots(m))c[s]=(m.coords&&m.coords[s])||[x,y];return c}
+function zoneLabel(s,x,y){if(s==='K')return 'K';const r=y>=60?0:y>=36?1:2,k=x<38?0:x>62?2:1;return [['LV','CV','RV'],['LM','CM','RM'],['LA','SP','RA']][r][k]}
+const labOf=(m,s)=>{if(!m.coords)return s;const c=coordsOf(m)[s];return zoneLabel(s,c[0],c[1])};
+function relayout(m,c){const L={0:[],1:[],2:[]};for(const s in c){if(s==='K')continue;const y=c[s][1];L[y>=60?0:y>=36?1:2].push(s)}
+ const Y=[72,48,22];for(const r in L){const a=L[r].sort((p,q)=>c[p][0]-c[q][0]),n=a.length;a.forEach((s,i)=>{c[s]=[n===1?50:Math.round(18+i*(64/(n-1))),Y[r]]})}
+ c.K=[50,90];m.coords=c;S.team.coords={form:m.form,size:m.size,c:JSON.parse(JSON.stringify(c))};touch('team/main',true)}
+const shape=m=>{const c=coordsOf(m),n=[0,0,0];for(const s in c){if(s==='K')continue;n[c[s][1]>=60?0:c[s][1]>=36?1:2]++}return n.join('-')};
+function pitchHtml(m,F,q,edit){const t=ct(m),live=q===actQ(m)&&m.clock.phase!=='pre',co=coordsOf(m);
+ return `<div class="pitch" data-pitch="1">${edit?'<div style="position:absolute;right:8px;top:6px;z-index:3;font-size:12px;color:#fff;background:#0006;padding:2px 8px;border-radius:6px">'+shape(m)+' · sleep spelers om de opstelling te wijzigen</div>':''}<div class="mid"></div><div class="cir"></div>`+slots(m).map(([s])=>{const p=F[s],[x,y]=co[s],lb=labOf(m,s);
+  return `<button class="slot ${s==='K'?'K':''} ${p?'':'empty'}" style="left:${x}%;top:${y}%;touch-action:none" ${edit?`data-a="slot" data-s="${s}" data-q="${q}" data-drag="${s==='K'?'':'1'}"`:''}><span class="dot">${lb}</span><span class="nm">${p?esc(short(p)):'leeg'}</span>${p&&live?`<span class="mn" data-min="${p}">${mins(pmin(m,p,t))}</span>`:''}</button>`}).join('')+'</div>'}
 function vPrep(m){const c=m.clock;
  if(c.phase!=='pre')return `<div class="card">De wedstrijd is al begonnen. Ga naar <button class="acc" data-a="mtab" data-t="live">2. Wedstrijd</button></div>`;
  const av=avail(m),n=slots(m).length;
@@ -342,7 +349,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · alleen '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 25</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 26</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -377,7 +384,7 @@ function planEntry(m,h,id){const L=(m.lu&&m.lu[h])||{},hs=(m.hs&&m.hs[h])||[];
 function planMin(m,id){let b=0;for(let h=1;h<=m.per;h++){const e=planEntry(m,h,id);b+=e==='F'||e==='K'?2:e?1:0}return b*m.perMin*30}
 function seasonK(id){let s=0;for(const m of Ms())if(m.id!==U.mid)for(const x of m.stints||[])if(x.p===id&&x.s==='K'&&x.b!=null)s+=x.b-x.a;return s}
 const fieldSlots=m=>slots(m).map(x=>x[0]).filter(s=>s!=='K');
-function allowedOf(m,id){const p=S.team.players.find(x=>x.id===id)||{},fs=fieldSlots(m);const a=(p.only||[]).filter(s=>fs.includes(s));return a.length?a:null}
+function allowedOf(m,id){const p=S.team.players.find(x=>x.id===id)||{};if(!(p.only||[]).length)return null;const a=fieldSlots(m).filter(s=>p.only.includes(labOf(m,s)));return a.length?a:null}
 const idealOf=m=>S.team.ideal&&S.team.ideal.form===m.form&&+S.team.ideal.size===+m.size?S.team.ideal.slots:null;
 function matchable(m,ids){const fs=fieldSlots(m);if(ids.length>fs.length)return false;const used={};
  const go=i=>{if(i>=ids.length)return true;const a=allowedOf(m,ids[i])||fs;for(const s of a)if(!used[s]){used[s]=1;if(go(i+1))return true;used[s]=0}return false};
@@ -569,7 +576,7 @@ const act={
  doSubs:()=>doSubs(),
  delTests:(d,b)=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Zeker? Tik nogmaals';return}for(const m of Object.values(S.matches))if(m.kind==='test'&&!m.del){m.del=true;U.autoQ=0;touch('matches/'+m.id,true)}render()},
  saveIdeal:()=>{const m=cm();S.team.ideal={form:m.form,size:m.size,slots:Object.assign({},m.field)};touch('team/main',true);if(m.lu){makePlan(m,m.k1?2:1)}save()},
- newTest:()=>{const id=uid(),d=new Date(),tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');S.matches[id]={id,kind:'test',date:today(),time:tm,opp:'Testwedstrijd',home:true,loc:'',size:S.team.size,form:S.team.form,per:S.team.per,perMin:S.team.perMin,att:{},field:{},clock:{acc:0,runAt:null,half:1,ps:0,phase:'pre'},stints:[],events:[],note:'',man:null};U.v='mx';U.mid=id;U.mtab='';touch('matches/'+id)},
+ newTest:()=>{const tc=S.team.coords,id=uid(),d=new Date(),tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');S.matches[id]={id,kind:'test',date:today(),time:tm,opp:'Testwedstrijd',home:true,loc:'',size:S.team.size,form:S.team.form,per:S.team.per,perMin:S.team.perMin,att:{},field:{},clock:{acc:0,runAt:null,half:1,ps:0,phase:'pre'},stints:[],events:[],note:'',man:null,coords:tc&&tc.form===S.team.form?JSON.parse(JSON.stringify(tc.c)):undefined};U.v='mx';U.mid=id;U.mtab='';touch('matches/'+id)},
  goalQ:()=>{const m=cm(),e={id:uid(),type:'goal',t:tracking(m)?ct(m):null,h:m.clock.half,p:null,as:null};m.events.push(e);m.man=null;U.askScorer=e.id;save()},
  setScorer:d=>{const m=cm(),e=m.events.find(x=>x.id===d.e);if(e&&d.p)e.p=d.p;U.askScorer=null;save()},
  allSubs:()=>{const m=cm(),nq=m.clock.half+1;setField(m,m.lu[nq]||m.field);m.applied=nq;save()},
@@ -610,7 +617,13 @@ const act={
   S[d.k][d.id].del=true;if(d.k==='matches')U.v='m';else U.tid=null;touch(d.k+'/'+d.id)},
  close:()=>close()};
 
-document.addEventListener('click',e=>{if(e.target.id==='ov'){close();return}
+U.drag=null;
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-drag="1"]');if(!b)return;const pit=b.closest('[data-pitch]');U.drag={b,pit,x0:e.clientX,y0:e.clientY,mv:false}});
+document.addEventListener('pointermove',e=>{const d=U.drag;if(!d)return;if(!d.mv&&Math.hypot(e.clientX-d.x0,e.clientY-d.y0)<10)return;d.mv=true;e.preventDefault();const r=d.pit.getBoundingClientRect();
+ const x=Math.max(8,Math.min(92,(e.clientX-r.left)/r.width*100)),y=Math.max(12,Math.min(80,(e.clientY-r.top)/r.height*100));d.b.style.left=x+'%';d.b.style.top=y+'%';d.x=x;d.y=y;d.b.style.zIndex=5},{passive:false});
+document.addEventListener('pointerup',()=>{const d=U.drag;U.drag=null;if(!d||!d.mv)return;U.noClick=Date.now();const m=cm();if(!m)return;const c=coordsOf(m);c[d.b.dataset.s]=[d.x,d.y];relayout(m,c);
+ if(m.lu&&m.clock.phase==='pre'){makePlan(m,m.k1?2:1);if(!m.k1)setField(m,m.lu[1])}save()});
+document.addEventListener('click',e=>{if(U.noClick&&Date.now()-U.noClick<400){e.preventDefault();return}if(e.target.id==='ov'){close();return}
  const b=e.target.closest('[data-a]');if(!b)return;const f=act[b.dataset.a];if(f){e.preventDefault();f(b.dataset,b)}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='Enter'&&e.target.matches('.prow[data-a]'))e.target.click()});
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Object.fromEntries(new FormData(f)),id=f.dataset.id;
