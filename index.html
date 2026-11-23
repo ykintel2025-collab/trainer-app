@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v20</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v21</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -287,7 +287,8 @@ function vLive(m){const c=m.clock,t=ct(m),[f,a]=score(m),L=m.perMin*60,qt=t-c.ps
  let big='';
  if(c.phase==='pre')big=`<button class="acc" data-a="kick">Aftrap</button>`;
  else if(c.phase==='live')big=`<button class="${over?'acc':'pri'}" data-a="endp">${c.half>=m.per?'Einde wedstrijd':'Einde '+PN(m)+' '+c.half}</button>`;
- else if(c.phase==='rust'){const nq=c.half+1;big=`<button class="acc" data-a="nextp">Wissel en start ${PN(m)} ${nq}</button>`}
+ else if(c.phase==='rust'){const nq=c.half+1,pend=pairsFor(m,nq).filter(x=>!onField(m).includes(x.i)).length;
+  big=m.applied!==nq&&pend?`<button class="acc" data-a="allSubs">Wissel nu (${pend})</button>`:`<button class="acc" data-a="nextp">Start ${PN(m)} ${nq}</button>`}
  if(big)h+=`<div class="row" style="margin-top:10px">${big.replace('<button ','<button style="flex:1;min-height:60px;font-size:20px" ')}</div>`;
  h+=`<div class="row" style="margin-top:8px"><button class="grow" data-a="goalQ">+ Goal wij</button><button class="grow" data-a="tegen">+ Goal tegen</button></div>`;
  if(c.phase==='live')h+=`<div class="row" style="margin-top:6px"><button class="grow" data-a="pause" style="min-height:38px">${c.runAt?'Pauze':'Hervat'}</button></div>`;
@@ -296,10 +297,10 @@ function vLive(m){const c=m.clock,t=ct(m),[f,a]=score(m),L=m.perMin*60,qt=t-c.ps
  if(lg&&!lg.p&&U.askScorer===lg.id)h+=`<div class="card tip"><b>Wie scoorde?</b><div class="row" style="margin-top:6px">${onField(m).map(id=>`<button data-a="setScorer" data-e="${lg.id}" data-p="${id}">${esc(short(id))}</button>`).join('')}<button data-a="setScorer" data-e="${lg.id}" data-p="">later</button></div></div>`;
  if(c.phase==='rust'){const nq=c.half+1,ps=pairsFor(m,nq).filter(x=>!onField(m).includes(x.i));
   if(ps.length)h+=`<h3>Wissels voor ${PN(m)} ${nq} <small>(tik op een rij om iemand anders te kiezen)</small></h3><div class="card">`+ps.map(x=>`<button class="prow" style="width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;justify-content:flex-start" data-a="slot" data-s="${x.s}" data-q="${nq}"><b style="color:var(--no)">${x.o?esc(short(x.o)):'-'}</b><span style="margin:0 8px">eruit, erin:</span><b style="color:var(--ok)">${esc(short(x.i))}</b></button>`).join('')+`</div>`}
- const rq=c.phase==='rust'?c.half+1:0,FF=rq?(m.lu[rq]=m.lu[rq]||{}):m.field,qq=rq||actQ(m)||c.half;
- h+=`<h3>${rq?'Opstelling '+PN(m)+' '+rq:'Op het veld'} <small>(tik op een speler om te wisselen of van plek te ruilen)</small></h3>`+pitchHtml(m,FF,qq,c.phase!=='end');
+ const rq=c.phase==='rust'?c.half+1:0,done=rq&&m.applied===rq,FF=m.field,qq=actQ(m)||c.half,ed=c.phase==='pre'||c.phase==='live'||done;
+ h+=`<h3>${rq?(done?'Opstelling '+PN(m)+' '+rq+' <small>(tik op een speler om van plek te ruilen of te wisselen)</small>':'Nu op het veld <small>(eerst op Wissel nu tikken)</small>'):'Op het veld <small>(tik op een speler om te wisselen of van plek te ruilen)</small>'}</h3>`+pitchHtml(m,FF,qq,ed);
  const bq=avail(m).filter(p=>!Object.values(FF).includes(p.id)).sort((x,y)=>pmin(m,x.id,t)-pmin(m,y.id,t));
- h+=`<h3>Bank <small>${c.phase!=='end'?'(tik om in te wisselen)':''}</small></h3><div class="bench">${bq.map(p=>c.phase!=='end'?`<button data-a="benchP" data-p="${p.id}" data-q="${qq}"><span>${esc(short(p.id))}</span><small data-min="${p.id}">${mins(pmin(m,p.id,t))}</small></button>`:`<span class="tag" style="padding:6px 10px">${esc(short(p.id))} <small data-min="${p.id}">${mins(pmin(m,p.id,t))}</small></span>`).join('')}</div>`;
+ h+=`<h3>Bank <small>${ed?'(tik om in te wisselen)':''}</small></h3><div class="bench">${bq.map(p=>ed?`<button data-a="benchP" data-p="${p.id}" data-q="${qq}"><span>${esc(short(p.id))}</span><small data-min="${p.id}">${mins(pmin(m,p.id,t))}</small></button>`:`<span class="tag" style="padding:6px 10px">${esc(short(p.id))} <small data-min="${p.id}">${mins(pmin(m,p.id,t))}</small></span>`).join('')}</div>`;
  if(c.phase!=='pre')h+=`<div class="row" style="margin-top:16px">${c.phase==='end'?'<button data-a="reopen">Heropen</button>':''}<button class="dng" data-a="resetM">Reset wedstrijd</button></div>`;
  return h}
 let WL=null;function wake(on){try{if(on&&!WL&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{WL=w;w.addEventListener('release',()=>WL=null)}).catch(()=>{});if(!on&&WL){WL.release();WL=null}}catch(e){}}
@@ -337,7 +338,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}${isK(p)?' · keeper':''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 20</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 21</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -486,7 +487,7 @@ function shSettings(){const t=S.team;
  <label><input type="checkbox" name="zlate" ${Z().lateBench?'checked':''} style="width:auto;min-height:0;margin-right:8px">Te laat bij wedstrijd: begint op de bank</label>
  <p class="mut">Training op tijd telt 1, te laat 0,5, afwezig of ziek 0. Wie alles mist, krijgt het ingestelde percentage minder speeltijd dan het eerlijke deel; wie er altijd is krijgt het volle deel. Iedereen speelt minimaal een halve wedstrijd (clubregel Blauw Geel).</p>
  <div class="row" style="margin-top:14px"><button class="pri grow">Opslaan</button></div></form>`)}
-const actQ=m=>m.clock.phase==='pre'?1:m.clock.phase==='live'?m.clock.half:0;
+const actQ=m=>m.clock.phase==='pre'?1:m.clock.phase==='live'?m.clock.half:(m.clock.phase==='rust'&&m.applied===m.clock.half+1)?m.clock.half+1:0;
 const fieldOf=(m,q)=>q===actQ(m)||!m.lu?m.field:(m.lu[q]=m.lu[q]||{});
 function shSlot(s,q){const m=cm();q=+q||actQ(m)||1;const F=fieldOf(m,q),pid=F[s],t=ct(m),isAct=q===actQ(m);
  const bq=avail(m).filter(p=>!Object.values(F).includes(p.id)).sort((a,b)=>planMin(m,a.id)-planMin(m,b.id));
@@ -537,7 +538,7 @@ const act={
  newTest:()=>{const id=uid(),d=new Date(),tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');S.matches[id]={id,kind:'test',date:today(),time:tm,opp:'Testwedstrijd',home:true,loc:'',size:S.team.size,form:S.team.form,per:S.team.per,perMin:S.team.perMin,att:{},field:{},clock:{acc:0,runAt:null,half:1,ps:0,phase:'pre'},stints:[],events:[],note:'',man:null};U.v='mx';U.mid=id;U.mtab='';touch('matches/'+id)},
  goalQ:()=>{const m=cm(),e={id:uid(),type:'goal',t:tracking(m)?ct(m):null,h:m.clock.half,p:null,as:null};m.events.push(e);m.man=null;U.askScorer=e.id;save()},
  setScorer:d=>{const m=cm(),e=m.events.find(x=>x.id===d.e);if(e&&d.p)e.p=d.p;U.askScorer=null;save()},
- allSubs:()=>{const m=cm(),nq=m.clock.half+1;setField(m,m.lu[nq]||m.field);save()},
+ allSubs:()=>{const m=cm(),nq=m.clock.half+1;setField(m,m.lu[nq]||m.field);m.applied=nq;save()},
  pickScorer:d=>{const m=cm();sheet(`<h2>Wie scoorde?</h2><div class="list">`+P().map(p=>`<button data-a="setScorer2" data-e="${d.e}" data-p="${p.id}"><span>${esc(p.name)}</span></button>`).join('')+'</div>')},
  setScorer2:d=>{close();const m=cm(),e=m.events.find(x=>x.id===d.e);if(e)e.p=d.p;save()},
  openSubs:()=>{const m=cm();popSubs(m,m.clock.half+1,'q')},
@@ -547,7 +548,7 @@ const act={
  kick:()=>{const m=cm(),c=m.clock;if(!onField(m).length)return;Object.assign(c,{phase:'live',runAt:Date.now(),half:1,ps:0,acc:0});m.stints=[];for(const s in m.field)openSt(m,m.field[s],s,0);save()},
  pause:()=>{const c=cm().clock;if(c.runAt){c.acc=ct(cm());c.runAt=null}else c.runAt=Date.now();save()},
  endp:()=>{const m=cm(),c=m.clock;close();c.acc=ct(m);c.runAt=null;if(c.half>=m.per)act.endm();else{c.phase='rust';U.q=c.half+1;save()}},
- nextp:()=>{const m=cm(),c=m.clock;close();if(m.lu&&m.lu[c.half+1])setField(m,m.lu[c.half+1]);c.half++;U.q=c.half;c.ps=c.acc;c.runAt=Date.now();c.phase='live';save()},
+ nextp:()=>{const m=cm(),c=m.clock;close();if(m.lu)m.lu[c.half+1]=Object.assign({},m.field);m.applied=0;c.half++;U.q=c.half;c.ps=c.acc;c.runAt=Date.now();c.phase='live';save()},
  endm:()=>{const m=cm(),c=m.clock,t=ct(m);c.acc=t;c.runAt=null;c.phase='end';for(const p of onField(m))closeSt(m,p,t);save()},
  reopen:()=>{const m=cm(),c=m.clock;c.phase='rust';for(const s in m.field)openSt(m,m.field[s],s,c.acc);save()},
  auto:()=>autoLineup(cm()),
