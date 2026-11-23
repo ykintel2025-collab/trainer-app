@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v17</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v18</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -149,7 +149,8 @@ async function connect(){
 const P=()=>S.team.players.filter(p=>!p.del).sort((a,b)=>(+a.nr||99)-(+b.nr||99)||a.name.localeCompare(b.name));
 const pn=id=>{const p=S.team.players.find(x=>x.id===id);return p?p.name:'Onbekend'};
 const short=id=>pn(id).split(' ')[0];
-const Ms=()=>Object.values(S.matches).filter(m=>!m.del).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+const Mall=()=>Object.values(S.matches).filter(m=>!m.del).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+const Ms=()=>Object.values(S.matches).filter(m=>!m.del&&m.kind!=='test').sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
 const Ts=()=>Object.values(S.trainings).filter(t=>!t.del).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
 const cm=()=>S.matches[U.mid];
 const slots=m=>{const f=FORMS[m.size]||FORMS[6];return f[m.form]||Object.values(f)[0]};
@@ -231,17 +232,18 @@ function attList(k,o){const ps=P();if(!ps.length)return '<p class="empty">Nog ge
   ps.map(p=>`<div class="prow"><b class="grow">${p.nr?esc(p.nr)+'. ':''}${esc(p.name)}</b>${segBtns(k,o.id,p.id,o.att[p.id])}</div>`).join('')+'</div>'}
 
 function vM(){
- const ms=Ms(),td=today();
+ const ms=Ms(),td=today(),tests=Mall().filter(m=>m.kind==='test');
  const done=ms.filter(m=>m.clock.phase==='end'||(m.date<td&&(m.events.length||m.man)));
  const up=ms.filter(m=>!done.includes(m));
  const row=m=>{const [f,a]=score(m),fin=done.includes(m),lv=tracking(m);
-  return `<button class="mrow" data-a="openM" data-id="${m.id}"><span class="t">${esc(m.time||'')}</span><span class="grow"><b>${m.home?'Thuis':'Uit'}: ${esc(m.opp||'Tegenstander')}</b><br><small>${fdate(m.date)}${m.loc?' · '+esc(m.loc):''}</small></span>${fin||lv?`<span class="sc">${f}-${a}</span> <span class="tag ${fin?res(m):''}">${fin?res(m):'live'}</span>`:''}</button>`};
- const w=done.filter(m=>res(m)==='W').length,g=done.filter(m=>res(m)==='G').length,v=done.filter(m=>res(m)==='V').length;
- const gf=done.reduce((a,m)=>a+score(m)[0],0),ga=done.reduce((a,m)=>a+score(m)[1],0);
- return `<div class="row"><h2 class="grow">Wedstrijden</h2><button class="pri" data-a="newM">+ Wedstrijd</button></div>
- ${done.length?`<div class="stat" style="margin-bottom:12px"><div><b>${done.length}</b><small>gespeeld</small></div><div><b>${w}-${g}-${v}</b><small>W-G-V</small></div><div><b>${gf}-${ga}</b><small>doelpunten</small></div><div><b>${w*3+g}</b><small>punten</small></div></div>`:''}
+  return `<button class="mrow" data-a="openM" data-id="${m.id}"><span class="t">${esc(m.time||'')}</span><span class="grow"><b>${m.kind==='test'?'<span class="tag">TEST</span> ':m.kind==='oefen'?'<span class="tag">oefen</span> ':''}${m.home?'Thuis':'Uit'}: ${esc(m.opp||'Tegenstander')}</b><br><small>${fdate(m.date)}${m.loc?' · '+esc(m.loc):''}</small></span>${fin||lv?`<span class="sc">${f}-${a}</span> <span class="tag ${fin?res(m):''}">${fin?res(m):'live'}</span>`:''}</button>`};
+ const dc=done.filter(m=>m.kind!=='oefen');const w=dc.filter(m=>res(m)==='W').length,g=dc.filter(m=>res(m)==='G').length,v=dc.filter(m=>res(m)==='V').length;
+ const gf=dc.reduce((a,m)=>a+score(m)[0],0),ga=dc.reduce((a,m)=>a+score(m)[1],0);
+ return `<div class="row"><h2 class="grow">Wedstrijden</h2><button data-a="newTest">+ Test</button><button class="pri" data-a="newM">+ Wedstrijd</button></div>
+ ${done.length?`<div class="stat" style="margin-bottom:12px"><div><b>${dc.length}</b><small>gespeeld</small></div><div><b>${w}-${g}-${v}</b><small>W-G-V</small></div><div><b>${gf}-${ga}</b><small>doelpunten</small></div><div><b>${w*3+g}</b><small>punten</small></div></div>`:''}
  <h3>Komend</h3>${up.map(row).join('')||'<p class="empty">Geen wedstrijden gepland.</p>'}
  ${done.length?'<h3>Gespeeld</h3>'+done.slice().reverse().map(row).join(''):''}
+ ${tests.length?'<h3>Testwedstrijden <small>(tellen nergens mee)</small></h3>'+tests.slice().reverse().map(row).join(''):''}
  <p class="mut">De officiële stand staat in de Voetbal.nl-app; hier staan je eigen uitslagen.</p>`}
 
 function pairsFor(m,q){const L=(m.lu&&m.lu[q])||{},prev=q===1?{}:(m.lu[q-1]||{}),pv=Object.values(prev),lv=Object.values(L);
@@ -326,8 +328,8 @@ function vT(){
   <div class="g2"><div><label>Datum</label><input type="date" value="${esc(t.date)}" data-ch="tdate"></div><div><label>Tijd</label><input type="time" value="${esc(t.time||'')}" data-ch="ttime"></div></div>
   <h3>Aanwezigheid</h3>${attList('t',t)}<label>Notities</label><textarea data-ch="tnote">${esc(t.note||'')}</textarea>
   <div class="row" style="margin-top:14px"><button class="dng" data-a="del" data-k="trainings" data-id="${t.id}">Training verwijderen</button></div>`}
- ensureTrainings();const ts=Ts().slice().reverse(),n=P().length,z=Z();
- return `<div class="row"><h2 class="grow">Trainingen</h2><button class="pri" data-a="newT">+ Extra training</button></div><p class="mut" style="margin-top:-4px">${z.days.map(d=>DAYS[d]).join(' en ')} ${esc(z.time)}, aanwezig om ${esc(z.arrive)}. Later dan ${esc(z.arrive)} = te laat.</p>`+
+ ensureTrainings();const td=today(),all=Ts(),past=U.tpast,ts=past?all.filter(t=>t.date<td):all.filter(t=>t.date>=td).reverse(),n=P().length,z=Z();
+ return `<div class="row"><h2 class="grow">Trainingen</h2><button class="pri" data-a="newT">+ Extra training</button></div><p class="mut" style="margin-top:-4px">${z.days.map(d=>DAYS[d]).join(' en ')} ${esc(z.time)}, aanwezig om ${esc(z.arrive)}. Later dan ${esc(z.arrive)} = te laat.</p><div class="tabs" style="grid-template-columns:1fr 1fr"><button data-a="tpast" data-v="0" class="${past?'':'on'}">Komend</button><button data-a="tpast" data-v="1" class="${past?'on':''}">Geweest (${all.filter(t=>t.date<td).length})</button></div>`+
   (ts.map(t=>{const a=Object.values(t.att).filter(v=>v==='a'||v==='l').length,l=Object.values(t.att).filter(v=>v==='l').length;
    return `<button class="mrow" data-a="openT" data-id="${t.id}"><span class="t">${esc(t.time||'')}</span><span class="grow"><b>${fdate(t.date)}</b><br><small>${a} van ${n} aanwezig${l?' · '+l+' te laat':''}</small></span></button>`}).join('')||'<p class="empty">Nog geen trainingen. Tik op + Training om aanwezigheid bij te houden.</p>')}
 
@@ -335,7 +337,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 17</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 18</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -455,6 +457,7 @@ function shMatch(m){const n=!m;m=m||{date:today(),time:'09:00',opp:'',home:true,
  <label>Tegenstander</label><input name="opp" value="${esc(m.opp)}" required placeholder="bijv. SV BLC O10-9">
  <div class="g2"><div><label>Datum</label><input type="date" name="date" value="${esc(m.date)}" required></div><div><label>Aftrap</label><input type="time" name="time" value="${esc(m.time)}"></div></div>
  <div class="g2"><div><label>Thuis / uit</label><select name="home"><option value="1" ${m.home?'selected':''}>Thuis</option><option value="0" ${m.home?'':'selected'}>Uit</option></select></div><div><label>Locatie</label><input name="loc" value="${esc(m.loc)}"></div></div>
+ <label>Soort</label><select name="kind"><option value="comp" ${(m.kind||'comp')==='comp'?'selected':''}>Competitie</option><option value="oefen" ${m.kind==='oefen'?'selected':''}>Oefenwedstrijd (telt mee voor speeltijd)</option><option value="test" ${m.kind==='test'?'selected':''}>Test (telt nergens mee)</option></select>
  <label>Spelvorm</label><select name="sf">${formOpts(m.size,m.form)}</select>
  ${n?'':`<label>Uitslag handmatig (alleen als je niet live hebt bijgehouden)</label><div class="g2"><input name="mf" inputmode="numeric" placeholder="wij" value="${m.man?m.man[0]:''}"><input name="ma" inputmode="numeric" placeholder="zij" value="${m.man?m.man[1]:''}"></div>`}
  <div class="row" style="margin-top:14px"><button class="pri grow">Opslaan</button></div></form>`)}
@@ -528,6 +531,7 @@ const act={
  qtab:d=>{U.q=+d.q;render()},
  pickIn:(d,b)=>{U.pick[d.o]=d.p;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('acc',x===b))},
  doSubs:()=>doSubs(),
+ newTest:()=>{const id=uid(),d=new Date(),tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');S.matches[id]={id,kind:'test',date:today(),time:tm,opp:'Testwedstrijd',home:true,loc:'',size:S.team.size,form:S.team.form,per:S.team.per,perMin:S.team.perMin,att:{},field:{},clock:{acc:0,runAt:null,half:1,ps:0,phase:'pre'},stints:[],events:[],note:'',man:null};U.v='mx';U.mid=id;U.mtab='';touch('matches/'+id)},
  goalQ:()=>{const m=cm(),e={id:uid(),type:'goal',t:tracking(m)?ct(m):null,h:m.clock.half,p:null,as:null};m.events.push(e);m.man=null;U.askScorer=e.id;save()},
  setScorer:d=>{const m=cm(),e=m.events.find(x=>x.id===d.e);if(e&&d.p)e.p=d.p;U.askScorer=null;save()},
  allSubs:()=>{const m=cm(),nq=m.clock.half+1;setField(m,m.lu[nq]||m.field);save()},
@@ -554,6 +558,7 @@ const act={
  tegen:()=>{const m=cm();m.events.push({id:uid(),type:'tegen',t:tracking(m)?ct(m):null,h:m.clock.half});m.man=null;save()},
  undo:()=>{const m=cm();for(let i=m.events.length-1;i>=0;i--)if(m.events[i].type!=='wissel'){m.events.splice(i,1);break}save()},
  delEv:d=>{const m=cm();m.events=m.events.filter(e=>e.id!==d.e);save()},
+ tpast:d=>{U.tpast=d.v==='1';render()},
  newT:()=>{const id=uid();S.trainings[id]={id,date:today(),time:'',att:{},note:''};U.tid=id;touch('trainings/'+id)},
  openT:d=>{U.tid=d.id;render();scrollTo(0,0)},backT:()=>{U.tid=null;render()},
  newP:()=>shPlayer(null),editP:d=>shPlayer(S.team.players.find(p=>p.id===d.id)),
@@ -573,7 +578,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')close();if(e.key==='
 document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Object.fromEntries(new FormData(f)),id=f.dataset.id;
  if(f.dataset.f==='m'){const [n,fm]=d.sf.split('|');let m=id&&S.matches[id];
   if(!m){const nid=uid();U.mtab='aanw';m=S.matches[nid]={id:nid,att:{},field:{},clock:{acc:0,runAt:null,half:1,ps:0,phase:'pre'},stints:[],events:[],note:'',man:null,per:S.team.per,perMin:S.team.perMin}}
-  Object.assign(m,{opp:d.opp.trim(),date:d.date,time:d.time,home:d.home==='1',loc:d.loc.trim()});
+  Object.assign(m,{opp:d.opp.trim(),date:d.date,time:d.time,home:d.home==='1',loc:d.loc.trim(),kind:d.kind||'comp'});
   if(+n!==m.size||fm!==m.form){if(m.size){U.mid=m.id;setForm(d.sf)}else{m.size=+n;m.form=fm}}
   m.man=(d.mf!==undefined&&d.mf!==''&&d.ma!=='')?[+d.mf||0,+d.ma||0]:null;
   close();U.v='mx';U.mid=m.id;touch('matches/'+m.id)}
