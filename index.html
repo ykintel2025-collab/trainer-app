@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v28</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v29</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -249,7 +249,7 @@ function vM(){
  ${tests.length?'<div class="row" style="margin-top:16px"><h3 class="grow" style="margin:0">Testwedstrijden <small>(tellen nergens mee)</small></h3><button class="dng" data-a="delTests" style="min-height:36px;font-size:14px">Verwijder alle tests</button></div>'+tests.slice().reverse().map(row).join(''):''}
  <p class="mut">De officiële stand staat in de Voetbal.nl-app; hier staan je eigen uitslagen.</p>`}
 
-function pairsFor(m,q){const L=(m.lu&&m.lu[q])||{},prev=q===1?{}:(m.lu[q-1]||{}),pv=Object.values(prev),lv=Object.values(L);
+function pairsFor(m,q){const L=(m.lu&&m.lu[q])||{},prev=q===1?{}:(m.clock.phase==='rust'&&q===m.clock.half+1?m.field:(m.lu[q-1]||{})),pv=Object.values(prev),lv=Object.values(L);
  const outs=pv.filter(p=>!lv.includes(p)),res=[];
  for(const s in L){const i=L[s];if(pv.includes(i))continue;let o=prev[s]&&!lv.includes(prev[s])?prev[s]:null;if(!o||res.some(r=>r.o===o))o=outs.find(x=>!res.some(r=>r.o===x))||null;res.push({s,i,o})}
  return res}
@@ -354,7 +354,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · liefst '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 28</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 29</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -467,6 +467,7 @@ function makePlan(m,from){from=from||1;const mf=id=>factor(id)*(m.att[id]==='l'?
   let sum=pick.reduce((a,p)=>a+lvl(p.id),0)+qPairs[h].reduce((a,pr)=>a+lvl(pr[0].id),0),cnt=pick.length+qPairs[h].length;
   while(pick.length<nS&&pool.length){let bi=-1,bs=1e9;const ids=pick.map(x=>x.id);pool.forEach((p,i)=>{if(!canAssign(m,ids.concat(p.id))||!gkOk(p))return;const ide1=idealOf(m),v=Math.abs(sum+lvl(p.id)-(cnt+1)*avgL)+pen(p)-(rem[p.id]/Math.max(1,qLeft(p.id)))*2-(h===1&&ide1&&Object.values(ide1).includes(p.id)?6+lvl(p.id)*2:0);if(v<bs){bs=v;bi=i}});if(bi<0)bi=0;
    const p=pool.splice(bi,1)[0];pick.push(p);sum+=lvl(p.id);cnt++}
+  if(pick.length<nS){const blk=new Set(qPairs[h].flat().map(p=>p.id));const extra=av.filter(p=>!pick.includes(p)&&!blk.has(p.id)).sort((a,b)=>(rem[b.id]-rem[a.id])||(done(a.id)-done(b.id)));for(const p of extra){if(pick.length>=nS)break;if(canAssign(m,pick.map(x=>x.id).concat(p.id)))pick.push(p)}}
   mem[h]=pick.map(p=>p.id);pick.forEach(p=>rem[p.id]--)}
  const kc={};for(let h=1;h<from;h++)if(lu[h]&&lu[h].K)kc[lu[h].K]=(kc[lu[h].K]||0)+1;
  for(const h of Q){const prev=h===1?{}:(h===from&&from===lastQ+1&&m.clock.phase!=='pre'?Object.assign({},m.field):(lu[h-1]||{}));const pk=prev.K;
@@ -598,7 +599,7 @@ const act={
  out:d=>{close();const m=cm(),q=+d.q||actQ(m);U.autoQ=q;if(q&&q!==actQ(m)){delete fieldOf(m,q)[d.s];save();return}const p=m.field[d.s];if(tracking(m)){closeSt(m,p,ct(m));m.events.push({id:uid(),type:'wissel',t:ct(m),h:m.clock.half,p:null,o:p})}delete m.field[d.s];if(m.lu&&q)m.lu[q]=Object.assign({},m.field);save()},
  kick:()=>{const m=cm(),c=m.clock;if(!onField(m).length)return;Object.assign(c,{phase:'live',runAt:Date.now(),half:1,ps:0,acc:0});m.stints=[];for(const s in m.field)openSt(m,m.field[s],s,0);save()},
  pause:()=>{const c=cm().clock;if(c.runAt){c.acc=ct(cm());c.runAt=null}else c.runAt=Date.now();save()},
- endp:()=>{const m=cm(),c=m.clock;close();c.acc=ct(m);c.runAt=null;if(c.half>=m.per)act.endm();else{c.phase='rust';U.q=c.half+1;save()}},
+ endp:()=>{const m=cm(),c=m.clock;close();c.acc=ct(m);c.runAt=null;if(c.half>=m.per)act.endm();else{c.phase='rust';U.q=c.half+1;m.applied=0;if(m.lu)makePlan(m,c.half+1);save()}},
  nextp:()=>{const m=cm(),c=m.clock;close();if(m.lu)m.lu[c.half+1]=Object.assign({},m.field);m.applied=0;c.half++;U.q=c.half;c.ps=c.acc;c.runAt=Date.now();c.phase='live';save()},
  endm:()=>{const m=cm(),c=m.clock,t=ct(m);c.acc=t;c.runAt=null;c.phase='end';for(const p of onField(m))closeSt(m,p,t);save()},
  reopen:()=>{const m=cm(),c=m.clock;c.phase='rust';for(const s in m.field)openSt(m,m.field[s],s,c.acc);save()},
