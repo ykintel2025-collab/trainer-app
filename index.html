@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v22</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v23</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -243,7 +243,7 @@ function vM(){
  ${done.length?`<div class="stat" style="margin-bottom:12px"><div><b>${dc.length}</b><small>gespeeld</small></div><div><b>${w}-${g}-${v}</b><small>W-G-V</small></div><div><b>${gf}-${ga}</b><small>doelpunten</small></div><div><b>${w*3+g}</b><small>punten</small></div></div>`:''}
  <h3>Komend</h3>${up.map(row).join('')||'<p class="empty">Geen wedstrijden gepland.</p>'}
  ${done.length?'<h3>Gespeeld</h3>'+done.slice().reverse().map(row).join(''):''}
- ${tests.length?'<h3>Testwedstrijden <small>(tellen nergens mee)</small></h3>'+tests.slice().reverse().map(row).join(''):''}
+ ${tests.length?'<div class="row" style="margin-top:16px"><h3 class="grow" style="margin:0">Testwedstrijden <small>(tellen nergens mee)</small></h3><button class="dng" data-a="delTests" style="min-height:36px;font-size:14px">Verwijder alle tests</button></div>'+tests.slice().reverse().map(row).join(''):''}
  <p class="mut">De officiële stand staat in de Voetbal.nl-app; hier staan je eigen uitslagen.</p>`}
 
 function pairsFor(m,q){const L=(m.lu&&m.lu[q])||{},prev=q===1?{}:(m.lu[q-1]||{}),pv=Object.values(prev),lv=Object.values(L);
@@ -340,7 +340,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · alleen '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 22</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 23</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -564,6 +564,7 @@ const act={
  qtab:d=>{U.q=+d.q;render()},
  pickIn:(d,b)=>{U.pick[d.o]=d.p;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('acc',x===b))},
  doSubs:()=>doSubs(),
+ delTests:(d,b)=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Zeker? Tik nogmaals';return}for(const m of Object.values(S.matches))if(m.kind==='test'&&!m.del){m.del=true;U.autoQ=0;touch('matches/'+m.id,true)}render()},
  saveIdeal:()=>{const m=cm();S.team.ideal={form:m.form,size:m.size,slots:Object.assign({},m.field)};touch('team/main',true);if(m.lu){makePlan(m,m.k1?2:1)}save()},
  newTest:()=>{const id=uid(),d=new Date(),tm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');S.matches[id]={id,kind:'test',date:today(),time:tm,opp:'Testwedstrijd',home:true,loc:'',size:S.team.size,form:S.team.form,per:S.team.per,perMin:S.team.perMin,att:{},field:{},clock:{acc:0,runAt:null,half:1,ps:0,phase:'pre'},stints:[],events:[],note:'',man:null};U.v='mx';U.mid=id;U.mtab='';touch('matches/'+id)},
  goalQ:()=>{const m=cm(),e={id:uid(),type:'goal',t:tracking(m)?ct(m):null,h:m.clock.half,p:null,as:null};m.events.push(e);m.man=null;U.askScorer=e.id;save()},
