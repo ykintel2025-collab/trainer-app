@@ -171,7 +171,7 @@ const POSN={K:'Keeper',LV:'Linksachter',RV:'Rechtsachter',CV:'Centrale verdedige
 const usedForm=()=>{if(S.team.coords){const c=S.team.coords.c;return ['LV','CV','RV','LM','CM','RM','LA','SP','RA']}const f=(S.team.ideal&&S.team.ideal.form)||S.team.form,z=+((S.team.ideal&&S.team.ideal.size)||S.team.size);return ((FORMS[z]||FORMS[6])[f]||Object.values(FORMS[z]||FORMS[6])[0]).map(x=>x[0]).filter(c=>c!=='K')};
 const PN=m=>m.per===4?'kwart':m.per===2?'helft':'periode';const PA=m=>m.per===4?'K':m.per===2?'H':'P';const fm=x=>String(x).replace('.',',');
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
-const ZD={on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
+const ZD={mode:'gelijk',on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
 function migrate(){if(S.team.fmt!==4){S.team.fmt=4;S.team.per=4;S.team.perMin=12.5;S.team.u=Date.now();const n=Date.now();
  for(const m of Object.values(S.matches))if(m.clock&&m.clock.phase!=='end'&&!(m.stints||[]).some(x=>(x.b??x.a)>x.a)){m.clock={acc:0,runAt:null,half:1,ps:0,phase:'pre'};m.stints=[];m.events=(m.events||[]).filter(e=>e.type!=='wissel');m.per=4;m.perMin=12.5;delete m.plan;m.u=n;setTimeout(()=>dirty.add('matches/'+m.id),0)}
  setTimeout(()=>{dirty.add('team/main');persist();flush()},0)}
@@ -429,7 +429,7 @@ function makePlan(m,from){from=from||1;const mf=id=>factor(id)*(m.att[id]==='l'?
   for(const p of av)need[p.id]=lo[p.id];
   const tier=p=>{const f=mf(p.id);return f>=.95?2:f>=.8?1:0};
   const seasonMin=id=>{let t=0;for(const x of Ms())if(x.id!==m.id)t+=pmin(x,id,ct(x));return t/60};
-  const key=p=>tier(p)*100+lvl(p.id)*10-(late(p)?5:0)+iz(p)*.01-seasonMin(p.id)*.02;
+  const key=p=>tier(p)*100+lvl(p.id)*10-(late(p)?5:0)+iz(p)*.01-seasonMin(p.id)*.02-done(p.id)*4;
   let used=av.reduce((a,p)=>a+need[p.id],0);
   while(used<SB){const c=av.filter(p=>need[p.id]<hi[p.id]).sort((a,b)=>key(b)-key(a)||need[a.id]-need[b.id])[0];if(!c)break;need[c.id]++;used++}}
  else{let used=av.reduce((a,p)=>a+need[p.id],0);
