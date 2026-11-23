@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v27</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v28</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -353,8 +353,8 @@ function vT(){
 function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
-  (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · alleen '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 27</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · liefst '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 28</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -389,7 +389,8 @@ function planEntry(m,h,id){const L=(m.lu&&m.lu[h])||{},hs=(m.hs&&m.hs[h])||[];
 function planMin(m,id){let b=0;for(let h=1;h<=m.per;h++){const e=planEntry(m,h,id);b+=e==='F'||e==='K'?2:e?1:0}return b*m.perMin*30}
 function seasonK(id){let s=0;for(const m of Ms())if(m.id!==U.mid)for(const x of m.stints||[])if(x.p===id&&x.s==='K'&&x.b!=null)s+=x.b-x.a;return s}
 const fieldSlots=m=>slots(m).map(x=>x[0]).filter(s=>s!=='K');
-function allowedOf(m,id){const p=S.team.players.find(x=>x.id===id)||{};if(!(p.only||[]).length)return null;const a=fieldSlots(m).filter(s=>p.only.includes(labOf(m,s)));return a.length?a:null}
+function allowedOf(m,id){return null}
+function prefOf(m,id){const p=S.team.players.find(x=>x.id===id)||{};if(!(p.only||[]).length)return null;const a=fieldSlots(m).filter(s=>p.only.includes(labOf(m,s)));return a.length?a:null}
 const idealOf=m=>S.team.ideal&&S.team.ideal.form===m.form&&+S.team.ideal.size===+m.size?S.team.ideal.slots:null;
 function matchable(m,ids){const fs=fieldSlots(m);if(ids.length>fs.length)return false;const used={};
  const go=i=>{if(i>=ids.length)return true;const a=allowedOf(m,ids[i])||fs;for(const s of a)if(!used[s]){used[s]=1;if(go(i+1))return true;used[s]=0}return false};
@@ -400,7 +401,7 @@ function canAssign(m,ids){const hasK=slots(m).some(x=>x[0]==='K');if(!hasK)retur
 function buildLineup(m,prev,members,K){const sl=slots(m).map(x=>x[0]),fs=fieldSlots(m),ideal=idealOf(m),fld={};
  if(K&&sl.includes('K')&&members.includes(K))fld.K=K;
  const rest=members.filter(p=>p!==fld.K);
- const cost=(p,s)=>{const a=allowedOf(m,p);if(a&&!a.includes(s))return 1e6;let c=20;if(ideal){const o=ideal[s];if(o===p)c-=10;else if(o)c+=Math.abs(lvl(p)-lvl(o))*3}if(prev[s]===p)c-=4;return c};
+ const cost=(p,s)=>{const a=prefOf(m,p);let c=a?(a.includes(s)?10:32):20;if(ideal){const o=ideal[s];if(o===p)c-=10;else if(o)c+=Math.abs(lvl(p)-lvl(o))*3}if(prev[s]===p)c-=4;return c};
  let best=null,bc=1e9;const cur={};
  const go=(i,c)=>{if(c>=bc)return;if(i>=rest.length){bc=c;best=Object.assign({},cur);return}for(const s of fs){if(cur[s])continue;const v=cost(rest[i],s);if(v>=1e6)continue;cur[s]=rest[i];go(i+1,c+v);delete cur[s]}};
  go(0,0);
@@ -439,9 +440,11 @@ function makePlan(m,from){from=from||1;const mf=id=>factor(id)*(m.att[id]==='l'?
   for(const k in groups){const g=groups[k],cap=g.n*leftB;let tot=g.ids.reduce((a,id)=>a+need[id],0);
    while(tot>cap){const c=(g.ids.filter(id=>need[id]>lo[id]).length?g.ids.filter(id=>need[id]>lo[id]):g.ids.filter(id=>need[id]>0)).sort((a,b)=>(need[b]-ideal[b])-(need[a]-ideal[a])||need[b]-need[a]||lvl(a)-lvl(b))[0];if(!c)break;need[c]--;tot--;
     const gel=(z.mode||'prio')==='gelijk',r=av.filter(p=>!allowedOf(m,p.id)&&need[p.id]<hi[p.id]).sort((a,b)=>gel?(need[a.id]-ideal[a.id])-(need[b.id]-ideal[b.id])||fk(b)-fk(a):fk(b)-fk(a))[0];if(r)need[r.id]++}}}
+ if(anyGK()){const gks=av.filter(isK),non=av.filter(p=>!isK(p));let g=gks.reduce((a,p)=>a+need[p.id],0);
+  while(g<leftB){const c=gks.filter(p=>need[p.id]<hi[p.id]).sort((a,b)=>need[a.id]-need[b.id])[0],d=non.filter(p=>need[p.id]>lo[p.id]).sort((a,b)=>need[b.id]-need[a.id])[0];if(!c||!d)break;need[c.id]++;need[d.id]--;g++}}
  const Q=[];for(let h=from;h<=P;h++)Q.push(h);
  const whole={},odd=[];for(const p of av){whole[p.id]=Math.floor(need[p.id]/QU);if(QU===2&&need[p.id]%2)odd.push(p)}
- const rk=p=>{const a=allowedOf(m,p.id);return a?a.slice().sort().join(','):'~'};odd.sort((a,b)=>rk(a).localeCompare(rk(b))||late(a)-late(b)||fr(b)-fr(a));
+ const rk=p=>{const a=allowedOf(m,p.id);return (isK(p)?'0':'1')+(a?a.slice().sort().join(','):'~')};odd.sort((a,b)=>rk(a).localeCompare(rk(b))||late(a)-late(b)||fr(b)-fr(a));
  if(odd.length%2){const p=odd.pop();if(whole[p.id]<Q.length)whole[p.id]++}
  const pairs=[];for(let i=0;i+1<odd.length;i+=2){let a=odd[i],b=odd[i+1];if(late(a)&&!late(b))[a,b]=[b,a];pairs.push([a,b])}
  const qPairs={},pairQ={};Q.forEach(h=>qPairs[h]=[]);
@@ -472,7 +475,7 @@ function makePlan(m,from){from=from||1;const mf=id=>factor(id)*(m.att[id]==='l'?
   const members=mem[h].concat(qPairs[h].map(pr=>pr[0].id));
   lu[h]=buildLineup(m,prev,members,K);hsAll[h]=qPairs[h].map(pr=>[pr[0].id,pr[1].id])}
  m.lu=lu;m.hs=hsAll;delete m.plan;m.luSig=planSig(m)}
-function planSig(m){return (Z().mode||'prio')+JSON.stringify(m.beh||{})+JSON.stringify(m.coords||0)+JSON.stringify(S.team.ideal||0)+avail(m).map(p=>p.id+':'+lvl(p.id)+':'+((S.team.players.find(x=>x.id===p.id)||{}).only||[]).join('/')+(isK(p)?'k':'')+':'+Math.round(factor(p.id)*100)+(m.att[p.id]==='l'?'l':'')).sort().join(',')}
+function planSig(m){return 'v28'+(Z().mode||'prio')+JSON.stringify(m.beh||{})+JSON.stringify(m.coords||0)+JSON.stringify(S.team.ideal||0)+avail(m).map(p=>p.id+':'+lvl(p.id)+':'+((S.team.players.find(x=>x.id===p.id)||{}).only||[]).join('/')+(isK(p)?'k':'')+':'+Math.round(factor(p.id)*100)+(m.att[p.id]==='l'?'l':'')).sort().join(',')}
 function setField(m,fld){const t=ct(m),trk=tracking(m),before=Object.assign({},m.field),oldIds=Object.values(before),nv=Object.values(fld);
  if(trk){for(const p of oldIds)if(!nv.includes(p))closeSt(m,p,t);
   for(const s in fld)if(before[s]!==fld[s]){if(oldIds.includes(fld[s]))closeSt(m,fld[s],t);openSt(m,fld[s],s,t)}
@@ -513,7 +516,7 @@ function shPlayer(p){const n=!p;p=p||{name:'',nr:'',pos:''};
  <label>Naam</label><input name="name" value="${esc(p.name)}" required>
  <label>Rugnummer</label><input name="nr" inputmode="numeric" value="${esc(p.nr)}">
  <label style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" name="gk" ${p.gk||isK(p)?'checked':''} style="width:24px;min-height:24px"> Mag keepen</label>
- <label>Kan alleen spelen op <small>(niets aangevinkt = overal)</small></label><div class="row">${usedForm().map(c=>`<label style="margin:0;display:flex;gap:8px;align-items:center;width:100%"><input type="checkbox" name="only_${c}" ${(p.only||[]).includes(c)?'checked':''} style="width:22px;min-height:22px"><b style="width:30px">${c}</b>${POSN[c]||''}</label>`).join('')}</div>
+ <label>Speelt liefst op <small>(voorkeur, mag ook elders; niets aangevinkt = overal)</small></label><div class="row">${usedForm().map(c=>`<label style="margin:0;display:flex;gap:8px;align-items:center;width:100%"><input type="checkbox" name="only_${c}" ${(p.only||[]).includes(c)?'checked':''} style="width:22px;min-height:22px"><b style="width:30px">${c}</b>${POSN[c]||''}</label>`).join('')}</div>
  <label>Niveau (alleen voor jou zichtbaar)</label><select name="lvl">${[1,2,3,4].map(k=>`<option value="${k}" ${(+p.lvl||2)===k?'selected':''}>${LV[k]}</option>`).join('')}</select>
  <div class="row" style="margin-top:14px"><button class="pri grow">Opslaan</button>${n?'':`<button type="button" class="dng" data-a="del" data-k="players" data-id="${p.id}">Verwijderen</button>`}</div></form>`)}
 function shSettings(){const t=S.team;
