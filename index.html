@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v18</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v19</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -336,8 +336,8 @@ function vT(){
 function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
-  (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 18</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}${isK(p)?' · keeper':''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 19</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -364,7 +364,8 @@ function render(){
  $('#app').innerHTML=U.v==='mx'?vMX():U.v==='t'?vT():U.v==='p'?vP():U.v==='s'?vS():vM()}
 
 /* ---------- wisselplan per periode ---------- */
-const isK=p=>(p.pos||'').toUpperCase().split(/[ ,\/]+/).includes('K');
+const isK=p=>!!(p&&(p.gk||(p.pos||'').toUpperCase().split(/[ ,\/]+/).includes('K')));
+const anyGK=()=>P().some(isK);
 function planEntry(m,h,id){const L=(m.lu&&m.lu[h])||{},hs=(m.hs&&m.hs[h])||[];
  if(Object.values(L).includes(id)){if(hs.some(x=>x[0]===id))return '1';return L.K===id?'K':'F'}
  if(hs.some(x=>x[1]===id))return '2';return ''}
@@ -414,6 +415,7 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
   const qLeft=id=>Q.filter(x=>x>=h&&pairQ[id]!==x).length;
   let pool=av.filter(p=>rem[p.id]>0&&!blocked.has(p.id));
   const pick=pool.filter(p=>rem[p.id]>=qLeft(p.id)).slice(0,nS);pool=pool.filter(p=>!pick.includes(p));
+  if(anyGK()&&!pick.some(isK)&&pick.length<nS){const g=pool.filter(isK).sort((a,b)=>(lu[h-1]&&lu[h-1].K===b.id)-(lu[h-1]&&lu[h-1].K===a.id)||rem[b.id]-rem[a.id])[0];if(g){pick.push(g);pool=pool.filter(x=>x!==g)}}
   const pen=p=>(h===1&&late(p))?50:0;
   let sum=pick.reduce((a,p)=>a+lvl(p.id),0)+qPairs[h].reduce((a,pr)=>a+lvl(pr[0].id),0),cnt=pick.length+qPairs[h].length;
   while(pick.length<nS&&pool.length){let bi=0,bs=1e9;pool.forEach((p,i)=>{const v=Math.abs(sum+lvl(p.id)-(cnt+1)*avgL)+pen(p)-(rem[p.id]/Math.max(1,qLeft(p.id)))*2;if(v<bs){bs=v;bi=i}});
@@ -421,7 +423,7 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
   mem[h]=pick.map(p=>p.id);pick.forEach(p=>rem[p.id]--)}
  const kc={};for(let h=1;h<from;h++)if(lu[h]&&lu[h].K)kc[lu[h].K]=(kc[lu[h].K]||0)+1;
  for(const h of Q){const prev=h===1?{}:(h===from&&from===lastQ+1&&m.clock.phase!=='pre'?Object.assign({},m.field):(lu[h-1]||{}));const pk=prev.K;
-  const sc=id=>{const p=S.team.players.find(x=>x.id===id)||{};return (pk===id?-200:0)+(isK(p)?-100:0)+(kc[id]||0)*10+seasonK(id)/600};
+  const sc=id=>{const p=S.team.players.find(x=>x.id===id)||{};return (anyGK()&&!isK(p)?1000:0)+(pk===id?-200:0)+(kc[id]||0)*10+seasonK(id)/600};
   const K=mem[h].slice().sort((a,b)=>sc(a)-sc(b))[0];if(K)kc[K]=(kc[K]||0)+1;
   const members=mem[h].concat(qPairs[h].map(pr=>pr[0].id));
   lu[h]=buildLineup(m,prev,members,K);hsAll[h]=qPairs[h].map(pr=>[pr[0].id,pr[1].id])}
@@ -465,7 +467,8 @@ function shPlayer(p){const n=!p;p=p||{name:'',nr:'',pos:''};
  const codes=[...new Set(Object.values(FORMS).flatMap(f=>Object.values(f).flat().map(x=>x[0])))];
  sheet(`<h2>${n?'Nieuwe speler':esc(p.name)}</h2><form data-f="p" data-id="${n?'':p.id}">
  <label>Naam</label><input name="name" value="${esc(p.name)}" required>
- <div class="g2"><div><label>Rugnummer</label><input name="nr" inputmode="numeric" value="${esc(p.nr)}"></div><div><label>Voorkeurspositie</label><input name="pos" list="poslist" value="${esc(p.pos)}" placeholder="bijv. K, LV, SP"><datalist id="poslist">${codes.map(c=>`<option value="${c}">`).join('')}</datalist></div></div>
+ <label>Rugnummer</label><input name="nr" inputmode="numeric" value="${esc(p.nr)}">
+ <label style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" name="gk" ${p.gk||isK(p)?'checked':''} style="width:24px;min-height:24px"> Mag keepen</label>
  <label>Niveau (alleen voor jou zichtbaar)</label><select name="lvl">${[1,2,3].map(k=>`<option value="${k}" ${(+p.lvl||2)===k?'selected':''}>${LV[k]}</option>`).join('')}</select>
  <div class="row" style="margin-top:14px"><button class="pri grow">Opslaan</button>${n?'':`<button type="button" class="dng" data-a="del" data-k="players" data-id="${p.id}">Verwijderen</button>`}</div></form>`)}
 function shSettings(){const t=S.team;
@@ -583,7 +586,7 @@ document.addEventListener('submit',e=>{e.preventDefault();const f=e.target,d=Obj
   m.man=(d.mf!==undefined&&d.mf!==''&&d.ma!=='')?[+d.mf||0,+d.ma||0]:null;
   close();U.v='mx';U.mid=m.id;touch('matches/'+m.id)}
  else if(f.dataset.f==='p'){let p=id&&S.team.players.find(x=>x.id===id);if(!p){p={id:uid()};S.team.players.push(p)}
-  Object.assign(p,{name:d.name.trim(),nr:d.nr.trim(),pos:d.pos.trim(),lvl:+d.lvl||2});close();touch('team/main')}
+  Object.assign(p,{name:d.name.trim(),nr:d.nr.trim(),pos:(d.pos||'').trim().replace(/\bK\b/i,'').trim(),gk:!!d.gk,lvl:+d.lvl||2});close();touch('team/main')}
  else if(f.dataset.f==='s'){const [n,fm]=d.sf.split('|');Object.assign(S.team,{name:d.name.trim(),size:+n,form:fm,per:+d.per,perMin:+String(d.perMin).replace(',','.')||12.5,inzet:{on:!!d.zon,from:d.zfrom||'2026-11-16',weight:+d.zw||33,win:+d.zwin,mode:d.zmode||'prio',v:2,lateBench:!!d.zlate,days:[1,2,3,4,5].filter(x=>d['zd'+x]),time:d.ztime||'18:00',arrive:d.zarr||'17:50'}});close();touch('team/main')}});
 document.addEventListener('change',e=>{const k=e.target.dataset.ch;if(!k)return;const v=e.target.value;
  if(k==='mform')setForm(v);
