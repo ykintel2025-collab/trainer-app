@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v23</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v24</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -340,7 +340,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · alleen '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 23</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 24</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -413,7 +413,8 @@ function makePlan(m,from){from=from||1;const n=slots(m).length,P=m.per,av=avail(
  if((z.mode||'prio')==='prio'){/* minimum voor iedereen, extra tijd eerst naar trouwe en sterke spelers */
   for(const p of av)need[p.id]=lo[p.id];
   const tier=p=>{const f=factor(p.id);return f>=.95?2:f>=.8?1:0};
-  const key=p=>tier(p)*100+lvl(p.id)*10-(late(p)?5:0)+iz(p)*.01;
+  const seasonMin=id=>{let t=0;for(const x of Ms())if(x.id!==m.id)t+=pmin(x,id,ct(x));return t/60};
+  const key=p=>tier(p)*100+lvl(p.id)*10-(late(p)?5:0)+iz(p)*.01-seasonMin(p.id)*.02;
   let used=av.reduce((a,p)=>a+need[p.id],0);
   while(used<SB){const c=av.filter(p=>need[p.id]<hi[p.id]).sort((a,b)=>key(b)-key(a)||need[a.id]-need[b.id])[0];if(!c)break;need[c.id]++;used++}}
  else{let used=av.reduce((a,p)=>a+need[p.id],0);
