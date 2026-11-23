@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v24</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v25</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -167,6 +167,8 @@ const closeSt=(m,p,t)=>{for(const s of m.stints)if(s.p===p&&s.b==null)s.b=t};
 const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).map(k=>`<option value="${n}|${k}" ${+n===+size&&k===form?'selected':''}>${n} tegen ${n} · ${k}</option>`).join('')).join('');
 const save=()=>{const m=cm(),q=U.autoQ;U.autoQ=0;if(m&&m.lu&&q){if(q===actQ(m))m.lu[q]=Object.assign({},m.field);if(q===1&&m.clock.phase==='pre')m.k1=true;if(q<m.per&&m.clock.phase!=='end')makePlan(m,q+1)}touch('matches/'+U.mid)};
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk',4:'Top'};
+const POSN={K:'Keeper',LV:'Linksachter',RV:'Rechtsachter',CV:'Centrale verdediger',V:'Verdediger',LM:'Linkermiddenvelder',RM:'Rechtermiddenvelder',CM:'Centrale middenvelder',M:'Middenvelder',LA:'Linksbuiten',RA:'Rechtsbuiten',SP:'Spits',A:'Achter',L:'Links',R:'Rechts',S:'Spits'};
+const usedForm=()=>{const f=(S.team.ideal&&S.team.ideal.form)||S.team.form,z=+((S.team.ideal&&S.team.ideal.size)||S.team.size);return ((FORMS[z]||FORMS[6])[f]||Object.values(FORMS[z]||FORMS[6])[0]).map(x=>x[0]).filter(c=>c!=='K')};
 const PN=m=>m.per===4?'kwart':m.per===2?'helft':'periode';const PA=m=>m.per===4?'K':m.per===2?'H':'P';const fm=x=>String(x).replace('.',',');
 const lvl=id=>{const p=S.team.players.find(x=>x.id===id);return +(p&&p.lvl)||2};
 const ZD={on:true,from:'2026-11-16',weight:33,win:8,lateBench:true,days:[2,4],time:'18:00',arrive:'17:50',v:2};
@@ -339,8 +341,8 @@ function vT(){
 function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
-  (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${esc(p.pos||'')}${p.pos?' · ':''}${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · alleen '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 24</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · alleen '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 25</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -499,7 +501,7 @@ function shPlayer(p){const n=!p;p=p||{name:'',nr:'',pos:''};
  <label>Naam</label><input name="name" value="${esc(p.name)}" required>
  <label>Rugnummer</label><input name="nr" inputmode="numeric" value="${esc(p.nr)}">
  <label style="display:flex;gap:10px;align-items:center;margin-top:14px"><input type="checkbox" name="gk" ${p.gk||isK(p)?'checked':''} style="width:24px;min-height:24px"> Mag keepen</label>
- <label>Kan alleen spelen op <small>(niets aangevinkt = overal)</small></label><div class="row">${[...new Set(Object.values(FORMS).flatMap(f=>Object.values(f).flat().map(x=>x[0])))].filter(c=>c!=='K').map(c=>`<label style="margin:0;display:flex;gap:4px;align-items:center"><input type="checkbox" name="only_${c}" ${(p.only||[]).includes(c)?'checked':''} style="width:22px;min-height:22px">${c}</label>`).join('')}</div>
+ <label>Kan alleen spelen op <small>(niets aangevinkt = overal)</small></label><div class="row">${usedForm().map(c=>`<label style="margin:0;display:flex;gap:8px;align-items:center;width:100%"><input type="checkbox" name="only_${c}" ${(p.only||[]).includes(c)?'checked':''} style="width:22px;min-height:22px"><b style="width:30px">${c}</b>${POSN[c]||''}</label>`).join('')}</div>
  <label>Niveau (alleen voor jou zichtbaar)</label><select name="lvl">${[1,2,3,4].map(k=>`<option value="${k}" ${(+p.lvl||2)===k?'selected':''}>${LV[k]}</option>`).join('')}</select>
  <div class="row" style="margin-top:14px"><button class="pri grow">Opslaan</button>${n?'':`<button type="button" class="dng" data-a="del" data-k="players" data-id="${p.id}">Verwijderen</button>`}</div></form>`)}
 function shSettings(){const t=S.team;
