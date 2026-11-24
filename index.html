@@ -84,7 +84,7 @@ textarea{min-height:90px}
 .stat b{display:block;font:700 28px/1 'Barlow Condensed',sans-serif}
 @media (prefers-reduced-motion:no-preference){#sh{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
 </style></head><body>
-<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v29</small></span></header>
+<header><h1 id="ttl">Trainer <b>JO10</b></h1><span style="text-align:right;line-height:1.1"><span id="sync">laden…</span><br><small style="color:#fff;opacity:.7;font-size:12px">v30</small></span></header>
 <main id="app"><p class="empty">Laden…</p></main>
 <nav id="nav"><button data-a="nav" data-v="m">Wedstrijden</button><button data-a="nav" data-v="t">Training</button><button data-a="nav" data-v="p">Spelers</button><button data-a="nav" data-v="s">Statistiek</button></nav>
 <div id="ov"><div id="sh"></div></div>
@@ -165,7 +165,7 @@ const res=m=>{const [f,a]=score(m);return f>a?'W':f<a?'V':'G'};
 const openSt=(m,p,s,t)=>m.stints.push({p,s,a:t,b:null});
 const closeSt=(m,p,t)=>{for(const s of m.stints)if(s.p===p&&s.b==null)s.b=t};
 const formOpts=(size,form)=>Object.entries(FORMS).map(([n,f])=>Object.keys(f).map(k=>`<option value="${n}|${k}" ${+n===+size&&k===form?'selected':''}>${n} tegen ${n} · ${k}</option>`).join('')).join('');
-const save=()=>{const m=cm(),q=U.autoQ;U.autoQ=0;if(m&&m.lu&&q){if(q===actQ(m))m.lu[q]=Object.assign({},m.field);if(q===1&&m.clock.phase==='pre')m.k1=true;if(q<m.per&&m.clock.phase!=='end')makePlan(m,q+1)}touch('matches/'+U.mid)};
+const save=()=>{const m=cm(),q=U.autoQ;U.autoQ=0;if(m&&q){const L0=q===actQ(m)?m.field:(m.lu||{})[q];if(L0&&L0.K){const pk=S.team.players.find(x=>x.id===L0.K);if(pk&&!pk.gk){m.gkx=m.gkx||{};m.gkx[pk.id]=true}}}if(m&&m.lu&&q){if(q===actQ(m))m.lu[q]=Object.assign({},m.field);if(q===1&&m.clock.phase==='pre')m.k1=true;if(q<m.per&&m.clock.phase!=='end')makePlan(m,q+1)}touch('matches/'+U.mid)};
 const LV={1:'Beginner',2:'Gemiddeld',3:'Sterk',4:'Top'};
 const POSN={K:'Keeper',LV:'Linksachter',RV:'Rechtsachter',CV:'Centrale verdediger',V:'Verdediger',LM:'Linkermiddenvelder',RM:'Rechtermiddenvelder',CM:'Centrale middenvelder',M:'Middenvelder',LA:'Linksbuiten',RA:'Rechtsbuiten',SP:'Spits',A:'Achter',L:'Links',R:'Rechts',S:'Spits'};
 const usedForm=()=>{if(S.team.coords){const c=S.team.coords.c;return ['LV','CV','RV','LM','CM','RM','LA','SP','RA']}const f=(S.team.ideal&&S.team.ideal.form)||S.team.form,z=+((S.team.ideal&&S.team.ideal.size)||S.team.size);return ((FORMS[z]||FORMS[6])[f]||Object.values(FORMS[z]||FORMS[6])[0]).map(x=>x[0]).filter(c=>c!=='K')};
@@ -354,7 +354,7 @@ function vP(){
  const ps=P();
  return `<div class="row"><h2 class="grow">Selectie</h2><button class="pri" data-a="newP">+ Speler</button></div><div class="card">`+
   (ps.map(p=>`<div class="prow" data-a="editP" data-id="${p.id}" role="button" tabindex="0" style="cursor:pointer"><b style="width:34px">${esc(p.nr||'')}</b><span class="grow">${esc(p.name)}</span><small>${LV[+p.lvl||2]}${isK(p)?' · keeper':''}${p.only&&p.only.length?' · liefst '+p.only.join('/'):''}</small></div>`).join('')||'<p class="empty">Nog geen spelers.</p>')+
-  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 29</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
+  `</div><h3>Team</h3><div class="card"><p style="margin:0 0 8px">${esc(S.team.name)} · ${S.team.size} tegen ${S.team.size} · ${esc(S.team.form)} · ${S.team.per}×${S.team.perMin} min</p><p class="mut" style="margin:0 0 8px">App-versie 30</p><div class="row"><button data-a="settings" class="grow">Instellingen</button><button data-a="backup" class="grow">Back-up</button></div></div>`}
 
 function stats(){
  const td=today(),ms=Ms(),ts=Ts();
@@ -381,7 +381,7 @@ function render(){
  $('#app').innerHTML=U.v==='mx'?vMX():U.v==='t'?vT():U.v==='p'?vP():U.v==='s'?vS():vM()}
 
 /* ---------- wisselplan per periode ---------- */
-const isK=p=>!!(p&&(p.gk||(p.pos||'').toUpperCase().split(/[ ,\/]+/).includes('K')));
+const isK=p=>!!(p&&((()=>{const m=U.mid&&S.matches[U.mid];return m&&m.gkx&&m.gkx[p.id]})()||p.gk||(p.pos||'').toUpperCase().split(/[ ,\/]+/).includes('K')));
 const anyGK=()=>P().some(isK);
 function planEntry(m,h,id){const L=(m.lu&&m.lu[h])||{},hs=(m.hs&&m.hs[h])||[];
  if(Object.values(L).includes(id)){if(hs.some(x=>x[0]===id))return '1';return L.K===id?'K':'F'}
@@ -450,7 +450,10 @@ function makePlan(m,from){from=from||1;const mf=id=>factor(id)*(m.att[id]==='l'?
  const qPairs={},pairQ={};Q.forEach(h=>qPairs[h]=[]);
  pairs.forEach((pr,j)=>{const h=Q[Q.length-1-(j%Q.length)];qPairs[h].push(pr);pr.forEach(p=>{pairQ[p.id]=h})});
  const avgL=av.reduce((a,p)=>a+lvl(p.id),0)/av.length,rem=Object.assign({},whole),mem={};
- for(const h of Q){const blocked=new Set(qPairs[h].flat().map(p=>p.id)),nS=nn-qPairs[h].length;
+ for(const h of Q){
+  {let ep;if(h===from){ep=from===1?[]:(from===lastQ+1&&m.clock.phase!=='pre'?onField(m):Object.values(lu[h-1]||{}).filter(x=>!(hsAll[h-1]||[]).some(y=>y[0]===x)).concat((hsAll[h-1]||[]).map(y=>y[1])))}else{ep=(mem[h-1]||[]).concat(qPairs[h-1].map(pr=>pr[1].id))}
+   for(const pr of qPairs[h]){if(ep.includes(pr[1].id)&&!ep.includes(pr[0].id)){const t=pr[0];pr[0]=pr[1];pr[1]=t}}}
+  const blocked=new Set(qPairs[h].flat().map(p=>p.id)),nS=nn-qPairs[h].length;
   const qLeft=id=>Q.filter(x=>x>=h&&pairQ[id]!==x).length;
   let pool=av.filter(p=>rem[p.id]>0&&!blocked.has(p.id));
   const pick=[],qn0=Q.filter(x=>x>=h).length,gkTot=av.filter(p=>isK(p)).reduce((a,p)=>a+rem[p.id],0);
@@ -465,10 +468,15 @@ function makePlan(m,from){from=from||1;const mf=id=>factor(id)*(m.att[id]==='l'?
   if(anyGK()&&!pick.some(isK)&&pick.length<nS){const g=pool.filter(isK).sort((a,b)=>(lu[h-1]&&lu[h-1].K===b.id)-(lu[h-1]&&lu[h-1].K===a.id)||rem[b.id]-rem[a.id])[0];if(g){pick.push(g);pool=pool.filter(x=>x!==g)}}
   const pen=p=>(h===1&&late(p))?50:0;
   let sum=pick.reduce((a,p)=>a+lvl(p.id),0)+qPairs[h].reduce((a,pr)=>a+lvl(pr[0].id),0),cnt=pick.length+qPairs[h].length;
-  while(pick.length<nS&&pool.length){let bi=-1,bs=1e9;const ids=pick.map(x=>x.id);pool.forEach((p,i)=>{if(!canAssign(m,ids.concat(p.id))||!gkOk(p))return;const ide1=idealOf(m),v=Math.abs(sum+lvl(p.id)-(cnt+1)*avgL)+pen(p)-(rem[p.id]/Math.max(1,qLeft(p.id)))*2-(h===1&&ide1&&Object.values(ide1).includes(p.id)?6+lvl(p.id)*2:0);if(v<bs){bs=v;bi=i}});if(bi<0)bi=0;
+  while(pick.length<nS&&pool.length){let bi=-1,bs=1e9;const ids=pick.map(x=>x.id);pool.forEach((p,i)=>{if(!canAssign(m,ids.concat(p.id))||!gkOk(p))return;const ide1=idealOf(m),v=Math.abs(sum+lvl(p.id)-(cnt+1)*avgL)+pen(p)-(rem[p.id]/Math.max(1,qLeft(p.id)))*2-(h===1&&ide1&&Object.values(ide1).includes(p.id)?6+lvl(p.id)*2:0)-(h===1&&!ide1?lvl(p.id)*2:0);if(v<bs){bs=v;bi=i}});if(bi<0)bi=0;
    const p=pool.splice(bi,1)[0];pick.push(p);sum+=lvl(p.id);cnt++}
   if(pick.length<nS){const blk=new Set(qPairs[h].flat().map(p=>p.id));const extra=av.filter(p=>!pick.includes(p)&&!blk.has(p.id)).sort((a,b)=>(rem[b.id]-rem[a.id])||(done(a.id)-done(b.id)));for(const p of extra){if(pick.length>=nS)break;if(canAssign(m,pick.map(x=>x.id).concat(p.id)))pick.push(p)}}
-  mem[h]=pick.map(p=>p.id);pick.forEach(p=>rem[p.id]--)}
+  mem[h]=pick.map(p=>p.id);pick.forEach(p=>rem[p.id]--);
+  {let ep;if(h===from){ep=from===1?[]:(from===lastQ+1&&m.clock.phase!=='pre'?onField(m):Object.values(lu[h-1]||{}).filter(x=>!(hsAll[h-1]||[]).some(y=>y[0]===x)).concat((hsAll[h-1]||[]).map(y=>y[1])))}else{ep=(mem[h-1]||[]).concat(qPairs[h-1].map(pr=>pr[1].id))}
+   for(const pr of qPairs[h]){const b=pr[1];if(!ep.includes(b.id))continue;const tb=need[b.id]+done(b.id);
+    if(h<P&&tb<maxB){const cs=mem[h].map((id,i)=>({id,i})).filter(o=>!ep.includes(o.id)&&(!anyGK()||!isK(S.team.players.find(q=>q.id===o.id)))&&need[o.id]+done(o.id)>minB).sort((u,v)=>(need[v.id]+done(v.id))-(need[u.id]+done(u.id)));
+     if(cs.length){const xi=cs[0].i,x=mem[h][xi];mem[h][xi]=b.id;pr[1]=av.find(q=>q.id===x);need[b.id]++;need[x]--;continue}}
+    if(tb-1>=minB){const inQ=new Set(mem[h].concat(qPairs[h].flat().map(q=>q.id)));const c=av.filter(q=>!inQ.has(q.id)&&!ep.includes(q.id)&&need[q.id]+done(q.id)<maxB&&(h<P||need[q.id]+done(q.id)<tb-1)).sort((u,v)=>(need[u.id]+done(u.id))-(need[v.id]+done(v.id)))[0];if(c){pr[1]=c;need[b.id]--;need[c.id]++}}}}}
  const kc={};for(let h=1;h<from;h++)if(lu[h]&&lu[h].K)kc[lu[h].K]=(kc[lu[h].K]||0)+1;
  for(const h of Q){const prev=h===1?{}:(h===from&&from===lastQ+1&&m.clock.phase!=='pre'?Object.assign({},m.field):(lu[h-1]||{}));const pk=prev.K;
   const ide=idealOf(m),sc=id=>{const p=S.team.players.find(x=>x.id===id)||{};return (anyGK()&&!isK(p)?1000:0)+(matchable(m,mem[h].filter(x=>x!==id))?0:500)+(pk===id?-200:0)+(ide&&ide.K===id?-50:0)+(kc[id]||0)*10+seasonK(id)/600};
